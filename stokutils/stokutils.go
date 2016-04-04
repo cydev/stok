@@ -1,3 +1,5 @@
+// Package stokutils implements various utilities that
+// helps testing stok.
 package stokutils
 
 import (
