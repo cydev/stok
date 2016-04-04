@@ -23,7 +23,7 @@ func (b Bulk) ReadHeader(l Link, buf []byte) (Header, error) {
 	// to be strict, we can panic (or return error) there.
 	if cap(buf) < LinkStructureSize {
 		buff := AcquireByteBuffer()
-		buff.Write(buf)
+		buff.Append(buf)
 		buf = buff.B
 		defer ReleaseByteBuffer(buff)
 	}
@@ -57,7 +57,7 @@ func (b Bulk) Write(h Header, data []byte) error {
 	if cap(data) < HeaderStructureSize {
 		// file is smaller than header (corner case)
 		buff := AcquireByteBuffer()
-		buff.Write(data)
+		buff.Append(data)
 		data = buff.B
 		defer ReleaseByteBuffer(buff)
 	}

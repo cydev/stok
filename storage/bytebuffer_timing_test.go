@@ -11,7 +11,9 @@ func BenchmarkByteBufferWrite(b *testing.B) {
 		var buf ByteBuffer
 		for pb.Next() {
 			for i := 0; i < 100; i++ {
-				buf.Write(s)
+				if _, err := buf.Write(s); err != nil {
+					b.Error(err)
+				}
 			}
 			buf.Reset()
 		}
@@ -24,7 +26,9 @@ func BenchmarkBytesBufferWrite(b *testing.B) {
 		var buf bytes.Buffer
 		for pb.Next() {
 			for i := 0; i < 100; i++ {
-				buf.Write(s)
+				if _, err := buf.Write(s); err != nil {
+					b.Error(err)
+				}
 			}
 			buf.Reset()
 		}

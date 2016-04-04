@@ -27,8 +27,13 @@ type ByteBuffer struct {
 
 // Write implements io.Writer - it appends p to ByteBuffer.B
 func (b *ByteBuffer) Write(p []byte) (int, error) {
+	return b.Append(p), nil
+}
+
+// Append appends p to ByteBuffer.B and returns length of p
+func (b *ByteBuffer) Append(p []byte) int {
 	b.B = append(b.B, p...)
-	return len(p), nil
+	return len(p)
 }
 
 // Reset makes ByteBuffer.B empty.
