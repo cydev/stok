@@ -4,7 +4,16 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"os"
 )
+
+func TestMain(m *testing.M) {
+	m.Run()
+	// workaround for go-lang-plugin-org/go-lang-idea-plugin#2439
+	if len(os.Getenv("IDEAWAIT")) > 0 {
+		time.Sleep(100 * time.Millisecond)
+	}
+}
 
 func TestVolume_ReadFile(t *testing.T) {
 	iB := tempFile(t)
