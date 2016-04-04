@@ -39,7 +39,7 @@ type memoryBackend struct {
 }
 
 func (m memoryBackend) Truncate(size int64) error {
-	m.buff.Grow(size)
+	m.buff.Grow(int(size))
 	m.reader = *bytes.NewReader(m.buff.Bytes())
 	return nil
 }
