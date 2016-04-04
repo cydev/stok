@@ -2,7 +2,6 @@ package storage
 
 import (
 	"encoding/binary"
-	"os"
 )
 
 // Link is index entry that links file id to offset, ID is key, Offset is value.
@@ -24,12 +23,7 @@ func NewLinkBuffer() []byte {
 }
 
 // An IndexBackend describes a backend that is used for index store.
-type IndexBackend interface {
-	ReadAt(b []byte, off int64) (int, error)
-	WriteAt(b []byte, off int64) (int, error)
-	Stat() (os.FileInfo, error)
-	Truncate(size int64) error
-}
+type IndexBackend Backend
 
 // Index uses IndexBackend to store and retrieve Links
 type Index struct {

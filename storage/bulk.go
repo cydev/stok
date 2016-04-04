@@ -2,7 +2,6 @@ package storage
 
 import (
 	"errors"
-	"os"
 )
 
 var (
@@ -11,12 +10,7 @@ var (
 )
 
 // An BulkBackend describes a backend that is used for file store.
-type BulkBackend interface {
-	ReadAt(b []byte, off int64) (int, error)
-	WriteAt(b []byte, off int64) (int, error)
-	Stat() (os.FileInfo, error)
-	Truncate(size int64) error
-}
+type BulkBackend Backend
 
 // Bulk is collection of data slices, prepended with File header. Implements basic operations on files.
 type Bulk struct {
