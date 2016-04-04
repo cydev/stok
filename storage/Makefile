@@ -7,3 +7,5 @@ test:
 	go test
 bench:
 	go test -benchmem -bench .
+escape:
+	go build -gcflags '-m -l'

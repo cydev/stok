@@ -23,7 +23,7 @@ import (
 type Header struct {
 	ID        int64 // -> Link.ID
 	Offset    int64 // -> Link.Offset
-	Size      int64 // len(data)
+	Size      int   // len(data)
 	Timestamp int64 // Time.Unix()
 }
 
@@ -57,7 +57,9 @@ func (h *Header) Read(b []byte) int {
 	var offset, read int
 	h.ID, read = binary.Varint(b[offset:])
 	offset += read
-	h.Size, read = binary.Varint(b[offset:])
+	var tSize int64
+	tSize, read = binary.Varint(b[offset:])
+	h.Size = int(tSize)
 	offset += read
 	h.Offset, read = binary.Varint(b[offset:])
 	offset += read
@@ -69,7 +71,7 @@ func (h *Header) Read(b []byte) int {
 func (h Header) Put(b []byte) int {
 	var offset int
 	offset += binary.PutVarint(b[offset:], h.ID)
-	offset += binary.PutVarint(b[offset:], h.Size)
+	offset += binary.PutVarint(b[offset:], int64(h.Size))
 	offset += binary.PutVarint(b[offset:], h.Offset)
 	offset += binary.PutVarint(b[offset:], h.Timestamp)
 	return offset

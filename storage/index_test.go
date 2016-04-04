@@ -8,7 +8,12 @@ import (
 	"time"
 )
 
-func tempFile(t *testing.T) *os.File {
+type fatalist interface {
+	Fatal(args ...interface{})
+	Error(args ...interface{})
+}
+
+func tempFile(t fatalist) *os.File {
 	f, err := ioutil.TempFile("", "")
 	if err != nil {
 		t.Fatal("tempFile:", err)
@@ -16,7 +21,7 @@ func tempFile(t *testing.T) *os.File {
 	return f
 }
 
-func clearTempFile(f *os.File, t *testing.T) {
+func clearTempFile(f *os.File, t fatalist) {
 	name := f.Name()
 	if err := f.Close(); err != nil {
 		t.Error(err)

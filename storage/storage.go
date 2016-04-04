@@ -22,15 +22,26 @@ type Volume struct {
 	Bulk  Bulk
 }
 
-// ReadBuf reads data with provided id to buffer, returning error if any.
-func (v Volume) ReadBuf(id int64, b []byte) error {
-	l, err := v.Index.ReadBuff(id, b)
+// ReadCallback is called on successful read from Volume. Buffer is valid until return.
+//
+// Do not use b []byte, it is reused in buffer pool.
+type ReadCallback func(h Header, b []byte) error
+
+// ReadFile reads file by id and calls ReadCallback if succeed, returns error if any.
+// If callback returns error, ReadFile returns it unchanged.
+func (v Volume) ReadFile(id int64, f ReadCallback) error {
+	b := AcquireByteBuffer()
+	defer ReleaseByteBuffer(b)
+	l, err := v.Index.ReadBuff(id, b.B)
 	if err != nil {
 		return err
 	}
-	h, err := v.Bulk.ReadHeader(l, b)
+	h, err := v.Bulk.ReadHeader(l, b.B)
 	if err != nil {
 		return err
 	}
-	return v.Bulk.ReadData(h, b)
+	if err := v.Bulk.ReadData(h, b); err != nil {
+		return err
+	}
+	return f(h, b.B)
 }

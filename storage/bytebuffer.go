@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultByteBufferSize = 1024 * 300 // 300 kb
+	defaultByteBufferSize = 1024 * 300 // changed to 300 kb because it is mostly used to read files
 )
 
 // ByteBuffer provides byte buffer, which can be used with storage API
@@ -44,6 +44,7 @@ func (b *ByteBuffer) Reset() {
 func AcquireByteBuffer() *ByteBuffer {
 	v := byteBufferPool.Get()
 	if v == nil {
+
 		return &ByteBuffer{
 			B: make([]byte, 0, defaultByteBufferSize),
 		}

@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -14,7 +15,7 @@ func TestBulk_Read(t *testing.T) {
 	s := "Data data data data data!"
 	data := bytes.NewBufferString(s)
 	f := Header{
-		Size:      int64(data.Len()),
+		Size:      data.Len(),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 		ID:        144,
@@ -39,14 +40,17 @@ func TestBulk_Read(t *testing.T) {
 	if err != nil {
 		t.Error("bulk.ReadInfo", err)
 	}
-	if err := bulk.ReadData(hRead, hBuf); err != nil {
+	bulkBuf := AcquireByteBuffer()
+	defer ReleaseByteBuffer(bulkBuf)
+	if err := bulk.ReadData(hRead, bulkBuf); err != nil {
 		t.Error("bulk.Read", err)
 	}
+	hBuf = bulkBuf.B
 	if hRead != f {
 		t.Errorf("%v != %v", hRead, f)
 	}
 	hBuf = hBuf[:hRead.Size]
-	if int64(len(hBuf)) != f.Size {
+	if len(hBuf) != f.Size {
 		t.Errorf("data.Len() %d != %d", data.Len(), f.Size)
 	}
 	if string(hBuf) != s {
@@ -54,19 +58,17 @@ func TestBulk_Read(t *testing.T) {
 	}
 }
 
-func TestBulk_Write(t *testing.T) {
+func testBulkWrite(t *testing.T, data []byte) {
 	backend := tempFile(t)
 	defer clearTempFile(backend, t)
 	bulk := Bulk{Backend: backend}
-	s := "Data data data data data!"
-	data := bytes.NewBufferString(s)
 	h := Header{
-		Size:      int64(data.Len()),
+		Size:      len(data),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 		ID:        0,
 	}
-	if err := bulk.Write(h, data.Bytes()); err != nil {
+	if err := bulk.Write(h, data); err != nil {
 		t.Fatal("bulk.Read", err)
 	}
 	l := Link{
@@ -78,19 +80,30 @@ func TestBulk_Write(t *testing.T) {
 	if err != nil {
 		t.Error("bulk.ReadInfo", err)
 	}
-	if err := bulk.ReadData(hRead, hBuf); err != nil {
+	bulkBuf := AcquireByteBuffer()
+	defer ReleaseByteBuffer(bulkBuf)
+	if err := bulk.ReadData(hRead, bulkBuf); err != nil {
 		t.Error("bulk.Read", err)
 	}
+	hBuf = bulkBuf.B
 	if hRead != h {
 		t.Errorf("%v != %v", hRead, h)
 	}
 	hBuf = hBuf[:hRead.Size]
-	if int64(len(hBuf)) != hRead.Size {
+	if len(hBuf) != hRead.Size {
 		t.Errorf("len(hBuf) %d != %d", len(hBuf), hRead.Size)
 	}
-	if string(hBuf) != s {
-		t.Errorf("%s != %s", string(hBuf), s)
+	if !reflect.DeepEqual(hBuf, data) {
+		t.Errorf("%s != %s", string(hBuf), string(data))
 	}
+}
+
+func TestBulk_Write1b(t *testing.T) {
+	testBulkWrite(t, bytes.NewBufferString("s"))
+}
+
+func TestBulk_Write(t *testing.T) {
+	testBulkWrite(t, bytes.NewBufferString("Data data data data data!"))
 }
 
 func BenchmarkBulk_Read(b *testing.B) {
@@ -107,10 +120,10 @@ func BenchmarkBulk_Read(b *testing.B) {
 		Timestamp: time.Now().Unix(),
 	}
 	data := []byte("Data data data data data!")
-	tmpHeader.Size = int64(len(data))
+	tmpHeader.Size = len(data)
 	for id = 0; id < 10; id++ {
 		tmpLink.ID = id
-		tmpHeader.Offset = id * (tmpHeader.Size + LinkStructureSize)
+		tmpHeader.Offset = id * (int64(tmpHeader.Size) + LinkStructureSize)
 		tmpLink.Put(buf)
 		if _, err := backend.WriteAt(buf, 0); err != nil {
 			b.Fatal(err)
@@ -122,21 +135,22 @@ func BenchmarkBulk_Read(b *testing.B) {
 	bulk := Bulk{Backend: &backend}
 	l := Link{
 		ID:     3,
-		Offset: (tmpHeader.Size + LinkStructureSize) * 3,
+		Offset: (int64(tmpHeader.Size) + LinkStructureSize) * 3,
 	}
-	hBuf := make([]byte, 0, tmpHeader.Size)
+	bulkBuf := AcquireByteBuffer()
+	defer ReleaseByteBuffer(bulkBuf)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		hBuf = hBuf[:0]
-		fRead, err := bulk.ReadHeader(l, hBuf)
+		fRead, err := bulk.ReadHeader(l, bulkBuf.B)
 		if err != nil {
 			b.Error("bulk.ReadInfo", err)
 		}
-		if err = bulk.ReadData(fRead, hBuf); err != nil {
+		if err = bulk.ReadData(fRead, bulkBuf); err != nil {
 			b.Error("bulk.Read", err)
 		}
 		if err != nil {
 			b.Error(err)
 		}
+		bulkBuf.Reset()
 	}
 }

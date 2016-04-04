@@ -24,6 +24,14 @@ type Bulk struct {
 
 // ReadHeader returns Header and error, if any, reading File by Link from backend.
 func (b Bulk) ReadHeader(l Link, buf []byte) (Header, error) {
+	// check that provided buffer is enough to store Link
+	// to be strict, we can panic (or return error) there.
+	if cap(buf) < LinkStructureSize {
+		buff := AcquireByteBuffer()
+		buff.Write(buf)
+		buf = buff.B
+		defer ReleaseByteBuffer(buff)
+	}
 	var h Header
 	h.ID = l.ID
 	h.Offset = l.Offset
@@ -39,14 +47,25 @@ func (b Bulk) ReadHeader(l Link, buf []byte) (Header, error) {
 }
 
 // ReadData reads h.Size bytes into buffer from f.DataOffset.
-func (b Bulk) ReadData(h Header, buf []byte) error {
-	buf = buf[:h.Size]
-	_, err := b.Backend.ReadAt(buf, h.DataOffset())
+func (b Bulk) ReadData(h Header, buf *ByteBuffer) error {
+	if cap(buf.B) < h.Size {
+		// not enough capacity to use buffer, so allocate more
+		buf.B = make([]byte, h.Size)
+	}
+	buf.B = buf.B[:h.Size]
+	_, err := b.Backend.ReadAt(buf.B, h.DataOffset())
 	return err
 }
 
 // Write returns error if any, writing Header and data to backend.
 func (b Bulk) Write(h Header, data []byte) error {
+	if cap(data) < HeaderStructureSize {
+		// file is smaller than header (corner case)
+		buff := AcquireByteBuffer()
+		buff.Write(data)
+		data = buff.B
+		defer ReleaseByteBuffer(buff)
+	}
 	// saving first HeaderStructureSize bytes to temporary slice on stack
 	tmp := make([]byte, HeaderStructureSize)
 	copy(tmp, data[:HeaderStructureSize])
@@ -58,6 +77,6 @@ func (b Bulk) Write(h Header, data []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = b.Backend.WriteAt(data, h.DataOffset())
+	_, err = b.Backend.WriteAt(data[:h.Size], h.DataOffset())
 	return err
 }
