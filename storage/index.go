@@ -28,11 +28,18 @@ type IndexBackend interface {
 	ReadAt(b []byte, off int64) (int, error)
 	WriteAt(b []byte, off int64) (int, error)
 	Stat() (os.FileInfo, error)
+	Truncate(size int64) error
 }
 
 // Index uses IndexBackend to store and retrieve Links
 type Index struct {
 	Backend IndexBackend
+}
+
+// Preallocate truncates changes the size of the index file so index
+// can fit provided count if links.
+func (i Index) Preallocate(count int) error {
+	return i.Backend.Truncate(int64(count * LinkStructureSize))
 }
 
 // ReadBuff returns Link with provided id using provided buffer during serialization

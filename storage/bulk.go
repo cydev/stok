@@ -15,6 +15,7 @@ type BulkBackend interface {
 	ReadAt(b []byte, off int64) (int, error)
 	WriteAt(b []byte, off int64) (int, error)
 	Stat() (os.FileInfo, error)
+	Truncate(size int64) error
 }
 
 // Bulk is collection of data slices, prepended with File header. Implements basic operations on files.
@@ -79,4 +80,10 @@ func (b Bulk) Write(h Header, data []byte) error {
 	}
 	_, err = b.Backend.WriteAt(data[:h.Size], h.DataOffset())
 	return err
+}
+
+// Preallocate truncates changes the size of the bulk.
+// It is shorthand to Backend.Truncate.
+func (b Bulk) Preallocate(size int64) error {
+	return b.Backend.Truncate(size)
 }

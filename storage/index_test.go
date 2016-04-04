@@ -38,6 +38,12 @@ type memoryBackend struct {
 	reader bytes.Reader
 }
 
+func (m memoryBackend) Truncate(size int64) error {
+	m.buff.Grow(size)
+	m.reader = *bytes.NewReader(m.buff.Bytes())
+	return nil
+}
+
 func (m memoryBackend) ReadAt(b []byte, off int64) (int, error) {
 	return m.reader.ReadAt(b, off)
 }
