@@ -1,5 +1,5 @@
 // Package stokutils implements various utilities that
-// helps testing stok.
+// help testing stok.
 package stokutils
 
 import (
@@ -23,7 +23,7 @@ func IDEAWorkaround() {
 	}
 }
 
-// Fatalist is common interface for testing.T and testing.B
+// Fatalist is common interface for testing.T and testing.B.
 type Fatalist interface {
 	Fatal(args ...interface{})
 	Error(args ...interface{})
@@ -50,26 +50,26 @@ func ClearTempFile(f *os.File, t Fatalist) {
 	}
 }
 
-// MemoryBackend is in-memory storage.Backend
+// MemoryBackend is in-memory storage.Backend.
 type MemoryBackend struct {
 	FileName string
 	Buff     bytes.Buffer
 	Reader   bytes.Reader
 }
 
-// Truncate underlying buffer
+// Truncate underlying buffer.
 func (m MemoryBackend) Truncate(size int64) error {
 	m.Buff.Grow(int(size))
 	m.Reader = *bytes.NewReader(m.Buff.Bytes())
 	return nil
 }
 
-// ReadAt from reader
+// ReadAt from reader.
 func (m MemoryBackend) ReadAt(b []byte, off int64) (int, error) {
 	return m.Reader.ReadAt(b, off)
 }
 
-// WriteAt to underlying buffer and rewrite Reader
+// WriteAt to underlying buffer and rewrite Reader.
 func (m *MemoryBackend) WriteAt(b []byte, off int64) (int, error) {
 	n, err := m.Buff.Write(b)
 	if err != nil {
@@ -94,7 +94,7 @@ func (m MemoryBackend) Size() int64 {
 	return int64(m.Buff.Len())
 }
 
-// Mode is always 0666
+// Mode is always 0666.
 func (m MemoryBackend) Mode() os.FileMode {
 	return os.FileMode(0666)
 }
