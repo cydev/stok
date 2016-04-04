@@ -79,7 +79,7 @@ func (b Bulk) Write(h Header, data []byte) error {
 	return err
 }
 
-// Preallocate truncates changes the size of the bulk.
+// Preallocate changes the size of the bulk to provided value and returns error if any.
 // It is shorthand to Backend.Truncate.
 func (b Bulk) Preallocate(size int64) error {
 	return b.Backend.Truncate(size)
