@@ -2,88 +2,10 @@ package storage
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"testing"
-	"time"
+
+	. "github.com/cydev/stok/stokutils"
 )
-
-type fatalist interface {
-	Fatal(args ...interface{})
-	Error(args ...interface{})
-}
-
-func tempFile(t fatalist) *os.File {
-	f, err := ioutil.TempFile("", "")
-	if err != nil {
-		t.Fatal("tempFile:", err)
-	}
-	return f
-}
-
-func clearTempFile(f *os.File, t fatalist) {
-	name := f.Name()
-	if err := f.Close(); err != nil {
-		t.Error(err)
-	}
-	if err := os.Remove(name); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// memoryBackend is in-memory file backend used in tests
-type memoryBackend struct {
-	name   string
-	buff   bytes.Buffer
-	reader bytes.Reader
-}
-
-func (m memoryBackend) Truncate(size int64) error {
-	m.buff.Grow(int(size))
-	m.reader = *bytes.NewReader(m.buff.Bytes())
-	return nil
-}
-
-func (m memoryBackend) ReadAt(b []byte, off int64) (int, error) {
-	return m.reader.ReadAt(b, off)
-}
-
-func (m *memoryBackend) WriteAt(b []byte, off int64) (int, error) {
-	n, err := m.buff.Write(b)
-	if err != nil {
-		return n, err
-	}
-	m.reader = *bytes.NewReader(m.buff.Bytes())
-	return n, nil
-}
-
-func (m memoryBackend) Stat() (os.FileInfo, error) {
-	return m, nil
-}
-
-func (m memoryBackend) Name() string {
-	return m.name
-}
-
-func (m memoryBackend) Size() int64 {
-	return int64(m.buff.Len())
-}
-
-func (m memoryBackend) Mode() os.FileMode {
-	return os.FileMode(0666)
-}
-
-func (m memoryBackend) IsDir() bool {
-	return false
-}
-
-func (m memoryBackend) Sys() interface{} {
-	return m.buff
-}
-
-func (m memoryBackend) ModTime() time.Time {
-	return time.Time{}
-}
 
 func TestLink(t *testing.T) {
 	l := Link{
@@ -132,7 +54,7 @@ func TestGetLink(t *testing.T) {
 }
 
 func TestIndex_ReadBuff(t *testing.T) {
-	var backend memoryBackend
+	var backend MemoryBackend
 	buf := make([]byte, LinkStructureSize)
 	var id int64
 	tmpLink := Link{
@@ -146,7 +68,7 @@ func TestIndex_ReadBuff(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	backend.buff = *bytes.NewBuffer(buf)
+	backend.Buff = *bytes.NewBuffer(buf)
 	index := Index{Backend: &backend}
 	readBuf := make([]byte, LinkStructureSize)
 	l, err := index.ReadBuff(3, readBuf)
@@ -160,7 +82,7 @@ func TestIndex_ReadBuff(t *testing.T) {
 }
 
 func TestIndex_Read(t *testing.T) {
-	var backend memoryBackend
+	var backend MemoryBackend
 	buf := make([]byte, LinkStructureSize)
 	var id int64
 	tmpLink := Link{
@@ -174,7 +96,7 @@ func TestIndex_Read(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	backend.buff = *bytes.NewBuffer(buf)
+	backend.Buff = *bytes.NewBuffer(buf)
 	index := Index{Backend: &backend}
 	l, err := index.ReadBuff(3, make([]byte, LinkStructureSize))
 	if err != nil {
@@ -187,7 +109,7 @@ func TestIndex_Read(t *testing.T) {
 }
 
 func BenchmarkIndex_ReadBuff(b *testing.B) {
-	var backend memoryBackend
+	var backend MemoryBackend
 	buf := make([]byte, LinkStructureSize)
 	var id int64
 	tmpLink := Link{
@@ -201,7 +123,7 @@ func BenchmarkIndex_ReadBuff(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
-	backend.buff = *bytes.NewBuffer(buf)
+	backend.Buff = *bytes.NewBuffer(buf)
 	index := Index{Backend: &backend}
 	l, err := index.ReadBuff(3, make([]byte, LinkStructureSize))
 	if err != nil {
@@ -220,8 +142,8 @@ func BenchmarkIndex_ReadBuff(b *testing.B) {
 }
 
 func TestIndexOsFile(t *testing.T) {
-	f := tempFile(t)
-	defer clearTempFile(f, t)
+	f := TempFile(t)
+	defer ClearTempFile(f, t)
 	index := Index{Backend: f}
 	b := NewLinkBuffer()
 	expected := Link{

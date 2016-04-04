@@ -6,11 +6,13 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	. "github.com/cydev/stok/stokutils"
 )
 
 func TestBulk_Read(t *testing.T) {
-	backend := tempFile(t)
-	defer clearTempFile(backend, t)
+	backend := TempFile(t)
+	defer ClearTempFile(backend, t)
 	bulk := Bulk{Backend: backend}
 	s := "Data data data data data!"
 	data := bytes.NewBufferString(s)
@@ -59,8 +61,8 @@ func TestBulk_Read(t *testing.T) {
 }
 
 func testBulkWrite(t *testing.T, data []byte) {
-	backend := tempFile(t)
-	defer clearTempFile(backend, t)
+	backend := TempFile(t)
+	defer ClearTempFile(backend, t)
 	bulk := Bulk{Backend: backend}
 	h := Header{
 		Size:      len(data),
@@ -107,7 +109,7 @@ func TestBulk_Write(t *testing.T) {
 }
 
 func BenchmarkBulk_Read(b *testing.B) {
-	var backend memoryBackend
+	var backend MemoryBackend
 	buf := make([]byte, LinkStructureSize)
 	var id int64
 	tmpLink := Link{

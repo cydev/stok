@@ -4,22 +4,20 @@ import (
 	"reflect"
 	"testing"
 	"time"
-	"os"
+
+	. "github.com/cydev/stok/stokutils"
 )
 
 func TestMain(m *testing.M) {
 	m.Run()
-	// workaround for go-lang-plugin-org/go-lang-idea-plugin#2439
-	if len(os.Getenv("IDEAWAIT")) > 0 {
-		time.Sleep(100 * time.Millisecond)
-	}
+	IDEAWorkaround()
 }
 
 func TestVolume_ReadFile(t *testing.T) {
-	iB := tempFile(t)
-	defer clearTempFile(iB, t)
-	bB := tempFile(t)
-	defer clearTempFile(bB, t)
+	iB := TempFile(t)
+	defer ClearTempFile(iB, t)
+	bB := TempFile(t)
+	defer ClearTempFile(bB, t)
 
 	v := Volume{
 		Index: Index{
@@ -63,10 +61,10 @@ func TestVolume_ReadFile(t *testing.T) {
 }
 
 func benchmarkVolumeReadFile(b *testing.B, d []byte) {
-	iB := tempFile(b)
-	defer clearTempFile(iB, b)
-	bB := tempFile(b)
-	defer clearTempFile(bB, b)
+	iB := TempFile(b)
+	defer ClearTempFile(iB, b)
+	bB := TempFile(b)
+	defer ClearTempFile(bB, b)
 
 	v := Volume{
 		Index: Index{
