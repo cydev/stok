@@ -5,7 +5,6 @@
 # stok
 Fast file storage implementation for Go.
 
-## modules
 | Module | Description | Coverage |
 | ------------- | ------------- | -------- |
 | storage  | Volume of index and files with headers | [![Coverage](http://gocover.io/_badge/github.com/cydev/stok/storage)](http://gocover.io/github.com/cydev/stok/storage) |
