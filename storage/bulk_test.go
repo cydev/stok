@@ -99,11 +99,11 @@ func testBulkWrite(t *testing.T, data []byte) {
 }
 
 func TestBulk_Write1b(t *testing.T) {
-	testBulkWrite(t, bytes.NewBufferString("s"))
+	testBulkWrite(t, []byte("s"))
 }
 
 func TestBulk_Write(t *testing.T) {
-	testBulkWrite(t, bytes.NewBufferString("Data data data data data!"))
+	testBulkWrite(t, []byte(("Data data data data data!")))
 }
 
 func BenchmarkBulk_Read(b *testing.B) {
