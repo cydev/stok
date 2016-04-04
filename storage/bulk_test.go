@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"bytes"
 	"os"
 	"reflect"
 	"testing"
@@ -11,33 +10,42 @@ import (
 )
 
 func TestBulk_Read(t *testing.T) {
+	testBulkRead(t, []byte("Data data data data data!"))
+}
+
+func TestBulk_Read2xPoolBufferSize(t *testing.T) {
+	d := []byte("Data data data data data!")
+	buf := make([]byte, defaultByteBufferSize*2)
+	copy(buf, d)
+	testBulkRead(t, buf)
+}
+
+func testBulkRead(t *testing.T, data []byte) {
 	backend := TempFile(t)
 	defer ClearTempFile(backend, t)
 	bulk := Bulk{Backend: backend}
-	s := "Data data data data data!"
-	data := bytes.NewBufferString(s)
-	f := Header{
-		Size:      data.Len(),
+	h := Header{
+		Size:      len(data),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
-		ID:        144,
+		ID:        0,
 	}
 	buf := NewHeaderBuffer()
-	f.Put(buf)
+	h.Put(buf)
 	if _, err := backend.Write(buf); err != nil {
 		t.Fatal("backend.Write", err)
 	}
-	if _, err := data.WriteTo(backend); err != nil {
+	if _, err := backend.Write(data); err != nil {
 		t.Fatal("data.WriteTo", err)
 	}
 	if _, err := backend.Seek(0, os.SEEK_SET); err != nil {
 		t.Fatal("backend.Seek", err)
 	}
 	l := Link{
-		ID:     f.ID,
+		ID:     h.ID,
 		Offset: 0,
 	}
-	hBuf := make([]byte, 0, f.Size)
+	hBuf := make([]byte, 0, h.Size)
 	hRead, err := bulk.ReadHeader(l, hBuf)
 	if err != nil {
 		t.Error("bulk.ReadInfo", err)
@@ -48,15 +56,15 @@ func TestBulk_Read(t *testing.T) {
 		t.Error("bulk.Read", err)
 	}
 	hBuf = bulkBuf.B
-	if hRead != f {
-		t.Errorf("%v != %v", hRead, f)
+	if hRead != h {
+		t.Errorf("%v != %v", hRead, h)
 	}
 	hBuf = hBuf[:hRead.Size]
-	if len(hBuf) != f.Size {
-		t.Errorf("data.Len() %d != %d", data.Len(), f.Size)
+	if len(hBuf) != hRead.Size {
+		t.Errorf("len(hBuf) %d != %d", len(hBuf), hRead.Size)
 	}
-	if string(hBuf) != s {
-		t.Errorf("%s != %s", string(hBuf), s)
+	if !reflect.DeepEqual(hBuf, data) {
+		t.Errorf("%s != %s", string(hBuf), string(data))
 	}
 }
 
