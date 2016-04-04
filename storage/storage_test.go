@@ -114,10 +114,8 @@ func BenchmarkVolume_ReadFile2x(b *testing.B) {
 	benchmarkVolumeReadFile(b, d)
 }
 
-
 func BenchmarkVolume_ReadFileHalf(b *testing.B) {
 	d := make([]byte, defaultByteBufferSize/2)
 	copy(d, []byte("data"))
 	benchmarkVolumeReadFile(b, d)
 }
-
