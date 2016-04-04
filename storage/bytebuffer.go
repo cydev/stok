@@ -44,7 +44,6 @@ func (b *ByteBuffer) Reset() {
 func AcquireByteBuffer() *ByteBuffer {
 	v := byteBufferPool.Get()
 	if v == nil {
-
 		return &ByteBuffer{
 			B: make([]byte, 0, defaultByteBufferSize),
 		}
