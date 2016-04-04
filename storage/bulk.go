@@ -5,7 +5,9 @@ import (
 )
 
 var (
-	// ErrIDMismatch returned when read Header.ID is not equal to provided Link.ID and is possible data corruption.
+	// ErrIDMismatch means that Header.ID is not equal to provided Link.ID and
+	// is returned by Bulk.ReadHeader.
+	// Possible reasons are: data corruption or usage of wrong index for bulk.
 	ErrIDMismatch = errors.New("BulkBackend Header.ID != Link.ID")
 )
 
