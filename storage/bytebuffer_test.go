@@ -12,6 +12,17 @@ func TestByteBufferAcquireReleaseSerial(t *testing.T) {
 	testByteBufferAcquireRelease(t)
 }
 
+func TestByteBuffer_Reset(t *testing.T) {
+	b := AcquireByteBuffer()
+	if _, err := b.Write([]byte("data")); err != nil {
+		t.Fatal(err)
+	}
+	b.Reset()
+	if len(b.B) != 0 {
+		t.Fatal("len(b.B) != 0")
+	}
+}
+
 func TestByteBufferAcquireReleaseConcurrent(t *testing.T) {
 	concurrency := 10
 	ch := make(chan struct{}, concurrency)
