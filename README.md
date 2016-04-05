@@ -9,7 +9,8 @@
 
 # stok
 
-Fast file storage implementation for Go. Inspired by [seaweedfs](https://github.com/chrislusf/seaweedfs) and [fasthttp](https://github.com/valyala/fasthttp).
+Fast file storage implementation for Go. 
+Inspired by [seaweedfs](https://github.com/chrislusf/seaweedfs),  [fasthttp](https://github.com/valyala/fasthttp), and [elliptics](https://github.com/reverbrain/elliptics).
 
 | Module | Description | Coverage |
 | ------------- | ------------- | -------- |
