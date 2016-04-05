@@ -1,17 +1,5 @@
 package storage
 
-import (
-	"errors"
-)
-
-var (
-	// ErrIDMismatch means that Header.ID is not equal to provided Link.ID and
-	// is returned by Bulk.ReadHeader.
-	//
-	// Possible reasons are data corruption or usage of wrong index for bulk.
-	ErrIDMismatch = errors.New("BulkBackend Header.ID != Link.ID")
-)
-
 // An BulkBackend describes a backend that is used for file store.
 type BulkBackend Backend
 
@@ -35,11 +23,11 @@ func (b Bulk) ReadHeader(l Link, buf []byte) (Header, error) {
 	h.Offset = l.Offset
 	_, err := b.Backend.ReadAt(buf[:LinkStructureSize], l.Offset)
 	if err != nil {
-		return h, err
+		return h, BackendError(err, AtBulk)
 	}
 	h.Read(buf[:LinkStructureSize])
 	if h.ID != l.ID {
-		return h, ErrIDMismatch
+		return h, IDMismatchError(h.ID, l.ID, AtBulk)
 	}
 	return h, err
 }
@@ -52,7 +40,10 @@ func (b Bulk) ReadData(h Header, buf *ByteBuffer) error {
 	}
 	buf.B = buf.B[:h.Size]
 	_, err := b.Backend.ReadAt(buf.B, h.DataOffset())
-	return err
+	if err != nil {
+		return BackendError(err, AtBulk)
+	}
+	return nil
 }
 
 // Write returns error if any, writing Header and data to backend.
@@ -73,14 +64,20 @@ func (b Bulk) Write(h Header, data []byte) error {
 	// loading back first bytes
 	copy(data[:HeaderStructureSize], tmp)
 	if err != nil {
-		return err
+		return BackendError(err, AtBulk)
 	}
 	_, err = b.Backend.WriteAt(data[:h.Size], h.DataOffset())
-	return err
+	if err != nil {
+		return BackendError(err, AtBulk)
+	}
+	return nil
 }
 
 // Preallocate changes the size of the bulk to provided value and returns error if any.
 // It is shorthand to Backend.Truncate.
 func (b Bulk) Preallocate(size int64) error {
-	return b.Backend.Truncate(size)
+	if err := b.Backend.Truncate(size); err != nil {
+		return BackendError(err, AtBulk)
+	}
+	return nil
 }

@@ -36,6 +36,9 @@ func (v Volume) ReadFile(id int64, f ReadCallback) error {
 	if err != nil {
 		return err
 	}
+	if l.ID != id {
+		return IDMismatchError(l.ID, id, AtIndex)
+	}
 	h, err := v.Bulk.ReadHeader(l, b.B)
 	if err != nil {
 		return err

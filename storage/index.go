@@ -41,7 +41,7 @@ func (i Index) ReadBuff(id int64, b []byte) (Link, error) {
 	l := Link{}
 	n, err := i.Backend.ReadAt(b, getLinkOffset(id))
 	if err != nil {
-		return l, err
+		return l, BackendError(err, AtIndex)
 	}
 	l.Read(b[:n])
 	return l, nil
@@ -51,7 +51,10 @@ func (i Index) ReadBuff(id int64, b []byte) (Link, error) {
 func (i Index) WriteBuff(l Link, b []byte) error {
 	l.Put(b)
 	_, err := i.Backend.WriteAt(b, getLinkOffset(l.ID))
-	return err
+	if err != nil {
+		return BackendError(err, AtIndex)
+	}
+	return nil
 }
 
 // getLinkOffset returns offset in index for link with provided file id.

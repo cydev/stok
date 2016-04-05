@@ -60,6 +60,101 @@ func TestVolume_ReadFile(t *testing.T) {
 	}
 }
 
+func TestVolume_ReadFile_CatchAtIndex(t *testing.T) {
+	iB := TempFile(t)
+	defer ClearTempFile(iB, t)
+	bB := TempFile(t)
+	defer ClearTempFile(bB, t)
+
+	v := Volume{
+		Index: Index{
+			Backend: iB,
+		},
+		Bulk: Bulk{
+			Backend: bB,
+		},
+	}
+
+	d := []byte("Data")
+	h := Header{
+		ID:        2,
+		Size:      len(d),
+		Offset:    0,
+		Timestamp: time.Now().Unix(),
+	}
+	l := h.Link()
+
+	buff := AcquireByteBuffer()
+	defer ReleaseByteBuffer(buff)
+	if err := v.Index.WriteBuff(l, buff.B[:LinkStructureSize]); err != nil {
+		t.Error(err)
+	}
+	if err := v.Bulk.Write(h, d); err != nil {
+		t.Error(err)
+	}
+
+	callback := func(rh Header, rd []byte) error {
+		t.Fatal("callback should not be called")
+		return nil
+	}
+	expectedError := IDMismatchError(0, 2, AtIndex)
+	if err, ok := v.ReadFile(h.ID, callback).(ErrIDMismatch); !ok {
+		t.Error("Error not catched")
+	} else {
+		if err != expectedError {
+			t.Errorf("%s != %s", expectedError, err)
+		}
+	}
+}
+
+func TestVolume_ReadFile_CatchAtBulk(t *testing.T) {
+	iB := TempFile(t)
+	defer ClearTempFile(iB, t)
+	bB := TempFile(t)
+	defer ClearTempFile(bB, t)
+
+	v := Volume{
+		Index: Index{
+			Backend: iB,
+		},
+		Bulk: Bulk{
+			Backend: bB,
+		},
+	}
+
+	d := []byte("Data")
+	h := Header{
+		ID:        2,
+		Size:      len(d),
+		Offset:    0,
+		Timestamp: time.Now().Unix(),
+	}
+	l := h.Link()
+	l.ID = 0
+
+	buff := AcquireByteBuffer()
+	defer ReleaseByteBuffer(buff)
+	if err := v.Index.WriteBuff(l, buff.B[:LinkStructureSize]); err != nil {
+		t.Error(err)
+	}
+	if err := v.Bulk.Write(h, d); err != nil {
+		t.Error(err)
+	}
+
+	callback := func(rh Header, rd []byte) error {
+		t.Fatal("callback should not be called")
+		return nil
+	}
+	expectedError := IDMismatchError(2, 0, AtBulk)
+	if err, ok := v.ReadFile(l.ID, callback).(ErrIDMismatch); !ok {
+		t.Error("Error not catched")
+	} else {
+		if err != expectedError {
+			t.Errorf("%s != %s", expectedError, err)
+		}
+	}
+}
+
 func benchmarkVolumeReadFile(b *testing.B, d []byte) {
 	iB := TempFile(b)
 	defer ClearTempFile(iB, b)
