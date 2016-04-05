@@ -13,8 +13,9 @@ import (
 //
 // Usage:
 //     func TestMain(m *testing.M) {
-//         m.Run()
+//         code := m.Run()
 //         IDEAWorkaround()
+//         os.Exit(code)
 //     }
 func IDEAWorkaround() {
 	// workaround for go-lang-plugin-org/go-lang-idea-plugin#2439
@@ -55,18 +56,23 @@ type MemoryBackend struct {
 	FileName string
 	Buff     bytes.Buffer
 	Reader   bytes.Reader
+	Err      error
 }
 
 // Truncate underlying buffer.
 func (m MemoryBackend) Truncate(size int64) error {
 	m.Buff.Grow(int(size))
 	m.Reader = *bytes.NewReader(m.Buff.Bytes())
-	return nil
+	return m.Err
 }
 
 // ReadAt from reader.
 func (m MemoryBackend) ReadAt(b []byte, off int64) (int, error) {
-	return m.Reader.ReadAt(b, off)
+	n, err := m.Reader.ReadAt(b, off)
+	if err != nil {
+		return n, err
+	}
+	return n, m.Err
 }
 
 // WriteAt to underlying buffer and rewrite Reader.
@@ -76,12 +82,12 @@ func (m *MemoryBackend) WriteAt(b []byte, off int64) (int, error) {
 		return n, err
 	}
 	m.Reader = *bytes.NewReader(m.Buff.Bytes())
-	return n, nil
+	return n, m.Err
 }
 
 // Stat returns self (MemoryBackend) and nil error.
 func (m MemoryBackend) Stat() (os.FileInfo, error) {
-	return m, nil
+	return m, m.Err
 }
 
 // Name returns FileName field value.
