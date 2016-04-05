@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"testing"
 
+	"io"
+
 	. "github.com/cydev/stok/stokutils"
 )
 
@@ -159,5 +161,64 @@ func TestIndexOsFile(t *testing.T) {
 	}
 	if l != expected {
 		t.Errorf("%v != %v", l, expected)
+	}
+}
+
+func TestIndex_ReadBuff_Error(t *testing.T) {
+	var backend MemoryBackend
+	if _, err := backend.WriteAt(make([]byte, LinkStructureSize), 0); err != nil {
+		t.Fatal(err)
+	}
+	expected := BackendError(io.ErrUnexpectedEOF, AtIndex)
+	backend.Err = expected.Err
+	index := Index{Backend: &backend}
+	buf := make([]byte, LinkStructureSize)
+	_, err := index.ReadBuff(0, buf)
+	bErr, ok := err.(ErrBackendFailed)
+	if !ok {
+		t.Error(err, "is not backend error")
+	}
+	if bErr != expected {
+		t.Error(bErr, "!=", expected)
+	}
+}
+
+func TestIndex_Preallocate_Error(t *testing.T) {
+	var backend MemoryBackend
+	expected := BackendError(io.ErrUnexpectedEOF, AtIndex)
+	backend.Err = io.ErrUnexpectedEOF
+	index := Index{Backend: &backend}
+	err := index.Preallocate(128)
+	bErr, ok := err.(ErrBackendFailed)
+	if !ok {
+		t.Error(err, "is not backend error")
+	}
+	if bErr != expected {
+		t.Error(bErr, "!=", expected)
+	}
+}
+
+func TestIndex_Preallocate(t *testing.T) {
+	f := TempFile(t)
+	defer ClearTempFile(f, t)
+	index := Index{Backend: f}
+	if err := index.Preallocate(128); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestIndex_WriteBuff_Error(t *testing.T) {
+	var backend MemoryBackend
+	expected := BackendError(io.ErrUnexpectedEOF, AtIndex)
+	backend.Err = io.ErrUnexpectedEOF
+	index := Index{Backend: &backend}
+	buf := make([]byte, LinkStructureSize)
+	err := index.WriteBuff(Link{ID: 0, Offset: 1234}, buf)
+	bErr, ok := err.(ErrBackendFailed)
+	if !ok {
+		t.Error(err, "is not backend error")
+	}
+	if bErr != expected {
+		t.Error(bErr, "!=", expected)
 	}
 }

@@ -65,4 +65,31 @@ func ReleaseByteBuffer(b *ByteBuffer) {
 	byteBufferPool.Put(b)
 }
 
-var byteBufferPool sync.Pool
+// AcquireIndexBuffer returns an empty byte buffer from the pool.
+//
+// Acquired byte buffer may be returned to the pool via ReleaseByteBuffer call.
+// This reduces the number of memory allocations required for byte buffer
+// management.
+func AcquireIndexBuffer() *ByteBuffer {
+	v := indexBufferPool.Get()
+	if v == nil {
+		return &ByteBuffer{
+			B: make([]byte, 0, LinkStructureSize),
+		}
+	}
+	return v.(*ByteBuffer)
+}
+
+// ReleaseIndexBuffer returns byte buffer to the pool.
+//
+// ByteBuffer.B mustn't be touched after returning it to the pool.
+// Otherwise data races occur.
+func ReleaseIndexBuffer(b *ByteBuffer) {
+	b.B = b.B[:0]
+	indexBufferPool.Put(b)
+}
+
+var (
+	byteBufferPool  sync.Pool
+	indexBufferPool sync.Pool
+)

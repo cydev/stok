@@ -24,11 +24,15 @@ func TestByteBuffer_Reset(t *testing.T) {
 }
 
 func TestByteBufferAcquireReleaseConcurrent(t *testing.T) {
+	testBufferAcquireReleaseConcurrent(t, testByteBufferAcquireRelease)
+}
+
+func testBufferAcquireReleaseConcurrent(t *testing.T, c func(t *testing.T)) {
 	concurrency := 10
 	ch := make(chan struct{}, concurrency)
 	for i := 0; i < concurrency; i++ {
 		go func() {
-			testByteBufferAcquireRelease(t)
+			c(t)
 			ch <- struct{}{}
 		}()
 	}
@@ -42,15 +46,36 @@ func TestByteBufferAcquireReleaseConcurrent(t *testing.T) {
 	}
 }
 
-func testByteBufferAcquireRelease(t *testing.T) {
+func TestIndexBufferAcquireReleaseConcurrent(t *testing.T) {
+	testBufferAcquireReleaseConcurrent(t, testIndexBufferAcquireRelease)
+}
+
+type acquireF func() *ByteBuffer
+type releaseF func(*ByteBuffer)
+
+func testBufferAcquireRelease(t *testing.T, acquire acquireF, release releaseF) {
 	for i := 0; i < 10; i++ {
-		b := AcquireByteBuffer()
+		b := acquire()
 		b.B = append(b.B, "num "...)
 		b.B = fasthttp.AppendUint(b.B, i)
 		expectedS := fmt.Sprintf("num %d", i)
 		if string(b.B) != expectedS {
 			t.Fatalf("unexpected result: %q. Expecting %q", b.B, expectedS)
 		}
-		ReleaseByteBuffer(b)
+		release(b)
 	}
+}
+
+func testByteBufferAcquireRelease(t *testing.T) {
+	testBufferAcquireRelease(t,
+		AcquireByteBuffer,
+		ReleaseByteBuffer,
+	)
+}
+
+func testIndexBufferAcquireRelease(t *testing.T) {
+	testBufferAcquireRelease(t,
+		AcquireIndexBuffer,
+		ReleaseIndexBuffer,
+	)
 }

@@ -65,6 +65,9 @@ type ErrBackendFailed struct {
 }
 
 func (e ErrBackendFailed) Error() string {
+	if e.Err == nil {
+		return "nil"
+	}
 	return fmt.Sprintf("Backend at %s: %s", e.Kind, e.Err)
 }
 

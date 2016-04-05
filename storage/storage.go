@@ -11,6 +11,8 @@
 // Files are stored in bulks, links in indexes. Bulk and index togather is Volume.
 package storage
 
+import "time"
+
 // Volume consists of Bulk and Index on it, and implements abstraction layer.
 //
 // Bulk <-> Index
@@ -47,4 +49,20 @@ func (v Volume) ReadFile(id int64, f ReadCallback) error {
 		return err
 	}
 	return f(h, b.B)
+}
+
+// WriteFile writes byte slice by link and returns Header for file and error if any.
+func (v Volume) WriteFile(l Link, b []byte) (Header, error) {
+	h := Header{
+		ID:        l.ID,
+		Offset:    l.Offset,
+		Size:      len(b),
+		Timestamp: time.Now().Unix(),
+	}
+	buf := AcquireIndexBuffer()
+	defer ReleaseIndexBuffer(buf)
+	if err := v.Index.WriteBuff(l, buf.B); err != nil {
+		return h, err
+	}
+	return h, v.Bulk.Write(h, b)
 }

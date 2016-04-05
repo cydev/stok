@@ -33,7 +33,10 @@ type Index struct {
 // Preallocate truncates changes the size of the index file so index
 // can fit provided count if links.
 func (i Index) Preallocate(count int) error {
-	return i.Backend.Truncate(int64(count * LinkStructureSize))
+	if err := i.Backend.Truncate(int64(count * LinkStructureSize)); err != nil {
+		return BackendError(err, AtIndex)
+	}
+	return nil
 }
 
 // ReadBuff returns Link with provided id using provided buffer during serialization
@@ -49,8 +52,8 @@ func (i Index) ReadBuff(id int64, b []byte) (Link, error) {
 
 // WriteBuff writes Link using provided buffer during deserialization
 func (i Index) WriteBuff(l Link, b []byte) error {
-	l.Put(b)
-	_, err := i.Backend.WriteAt(b, getLinkOffset(l.ID))
+	l.Put(b[:LinkStructureSize])
+	_, err := i.Backend.WriteAt(b[:LinkStructureSize], getLinkOffset(l.ID))
 	if err != nil {
 		return BackendError(err, AtIndex)
 	}

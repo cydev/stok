@@ -13,6 +13,41 @@ func TestMain(m *testing.M) {
 	IDEAWorkaround()
 }
 
+func TestVolume_WriteFile(t *testing.T) {
+	iB := TempFile(t)
+	defer ClearTempFile(iB, t)
+	bB := TempFile(t)
+	defer ClearTempFile(bB, t)
+
+	v := Volume{
+		Index: Index{
+			Backend: iB,
+		},
+		Bulk: Bulk{
+			Backend: bB,
+		},
+	}
+
+	d := []byte("Data")
+	h, err := v.WriteFile(Link{ID: 0}, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	callback := func(rh Header, rd []byte) error {
+		if !reflect.DeepEqual(rd, d) {
+			t.Error("read data missmatch")
+		}
+		if rh != h {
+			t.Error("header missmatch")
+		}
+		return nil
+	}
+	if err := v.ReadFile(h.ID, callback); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestVolume_ReadFile(t *testing.T) {
 	iB := TempFile(t)
 	defer ClearTempFile(iB, t)
