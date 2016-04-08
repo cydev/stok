@@ -4,7 +4,7 @@ check:
 format:
 	goimports -w .
 test:
-	go test
+	go test -race .
 bench:
 	go test -benchmem -bench .
 escape:

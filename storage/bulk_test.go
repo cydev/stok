@@ -7,7 +7,27 @@ import (
 	"time"
 
 	. "github.com/cydev/stok/stokutils"
+	log "github.com/Sirupsen/logrus"
 )
+
+func TestBulk_Allocate(t *testing.T) {
+	backend := TempFile(t)
+	defer ClearTempFile(backend, t)
+	bulk := Bulk{Backend: backend}
+
+	for i := int64(1); i < 10; i++ {
+		off, err := bulk.Allocate(128+i)
+		if err != nil {
+			t.Error(err)
+		}
+		log.WithFields(log.Fields{
+			"offset": off,
+			"end": 128 + i + off,
+			"cap": bulk.Capacity,
+		}).Info("allocated")
+	}
+
+}
 
 func TestBulk_Read(t *testing.T) {
 	testBulkRead(t, []byte("Data data data data data!"))
@@ -25,7 +45,7 @@ func testBulkRead(t *testing.T, data []byte) {
 	defer ClearTempFile(backend, t)
 	bulk := Bulk{Backend: backend}
 	h := Header{
-		Size:      len(data),
+		Length:    len(data),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 		ID:        0,
@@ -45,7 +65,7 @@ func testBulkRead(t *testing.T, data []byte) {
 		ID:     h.ID,
 		Offset: 0,
 	}
-	hBuf := make([]byte, 0, h.Size)
+	hBuf := make([]byte, 0, h.Length)
 	hRead, err := bulk.ReadHeader(l, hBuf)
 	if err != nil {
 		t.Error("bulk.ReadInfo", err)
@@ -59,9 +79,9 @@ func testBulkRead(t *testing.T, data []byte) {
 	if hRead != h {
 		t.Errorf("%v != %v", hRead, h)
 	}
-	hBuf = hBuf[:hRead.Size]
-	if len(hBuf) != hRead.Size {
-		t.Errorf("len(hBuf) %d != %d", len(hBuf), hRead.Size)
+	hBuf = hBuf[:hRead.Length]
+	if len(hBuf) != hRead.Length {
+		t.Errorf("len(hBuf) %d != %d", len(hBuf), hRead.Length)
 	}
 	if !reflect.DeepEqual(hBuf, data) {
 		t.Errorf("%s != %s", string(hBuf), string(data))
@@ -73,7 +93,7 @@ func testBulkWrite(t *testing.T, data []byte) {
 	defer ClearTempFile(backend, t)
 	bulk := Bulk{Backend: backend}
 	h := Header{
-		Size:      len(data),
+		Length:    len(data),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 		ID:        0,
@@ -85,7 +105,7 @@ func testBulkWrite(t *testing.T, data []byte) {
 		ID:     h.ID,
 		Offset: 0,
 	}
-	hBuf := make([]byte, 0, h.Size)
+	hBuf := make([]byte, 0, h.Length)
 	hRead, err := bulk.ReadHeader(l, hBuf)
 	if err != nil {
 		t.Error("bulk.ReadInfo", err)
@@ -99,9 +119,9 @@ func testBulkWrite(t *testing.T, data []byte) {
 	if hRead != h {
 		t.Errorf("%v != %v", hRead, h)
 	}
-	hBuf = hBuf[:hRead.Size]
-	if len(hBuf) != hRead.Size {
-		t.Errorf("len(hBuf) %d != %d", len(hBuf), hRead.Size)
+	hBuf = hBuf[:hRead.Length]
+	if len(hBuf) != hRead.Length {
+		t.Errorf("len(hBuf) %d != %d", len(hBuf), hRead.Length)
 	}
 	if !reflect.DeepEqual(hBuf, data) {
 		t.Errorf("%s != %s", string(hBuf), string(data))
@@ -130,10 +150,10 @@ func BenchmarkBulk_Read(b *testing.B) {
 		Timestamp: time.Now().Unix(),
 	}
 	data := []byte("Data data data data data!")
-	tmpHeader.Size = len(data)
+	tmpHeader.Length = len(data)
 	for id = 0; id < 10; id++ {
 		tmpLink.ID = id
-		tmpHeader.Offset = id * (int64(tmpHeader.Size) + LinkStructureSize)
+		tmpHeader.Offset = id * (int64(tmpHeader.Length) + LinkStructureSize)
 		tmpLink.Put(buf)
 		if _, err := backend.WriteAt(buf, 0); err != nil {
 			b.Fatal(err)
@@ -145,7 +165,7 @@ func BenchmarkBulk_Read(b *testing.B) {
 	bulk := Bulk{Backend: &backend}
 	l := Link{
 		ID:     3,
-		Offset: (int64(tmpHeader.Size) + LinkStructureSize) * 3,
+		Offset: (int64(tmpHeader.Length) + LinkStructureSize) * 3,
 	}
 	bulkBuf := AcquireByteBuffer()
 	defer ReleaseByteBuffer(bulkBuf)

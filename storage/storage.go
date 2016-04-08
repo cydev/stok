@@ -56,7 +56,7 @@ func (v Volume) WriteFile(l Link, b []byte) (Header, error) {
 	h := Header{
 		ID:        l.ID,
 		Offset:    l.Offset,
-		Size:      len(b),
+		Length:    len(b),
 		Timestamp: time.Now().Unix(),
 	}
 	buf := AcquireIndexBuffer()

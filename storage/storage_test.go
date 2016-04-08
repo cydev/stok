@@ -66,7 +66,7 @@ func TestVolume_ReadFile(t *testing.T) {
 	d := []byte("Data")
 	h := Header{
 		ID:        0,
-		Size:      len(d),
+		Length:    len(d),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 	}
@@ -113,7 +113,7 @@ func TestVolume_ReadFile_CatchAtIndex(t *testing.T) {
 	d := []byte("Data")
 	h := Header{
 		ID:        2,
-		Size:      len(d),
+		Length:    len(d),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 	}
@@ -160,7 +160,7 @@ func TestVolume_ReadFile_CatchAtBulk(t *testing.T) {
 	d := []byte("Data")
 	h := Header{
 		ID:        2,
-		Size:      len(d),
+		Length:    len(d),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 	}
@@ -196,6 +196,8 @@ func benchmarkVolumeReadFile(b *testing.B, d []byte) {
 	bB := TempFile(b)
 	defer ClearTempFile(bB, b)
 
+	b.ReportAllocs()
+
 	v := Volume{
 		Index: Index{
 			Backend: iB,
@@ -207,7 +209,7 @@ func benchmarkVolumeReadFile(b *testing.B, d []byte) {
 
 	h := Header{
 		ID:        0,
-		Size:      len(d),
+		Length:    len(d),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 	}
@@ -231,6 +233,7 @@ func benchmarkVolumeReadFile(b *testing.B, d []byte) {
 		if err := v.ReadFile(h.ID, callback); err != nil {
 			b.Error(err)
 		}
+		b.SetBytes(int64(h.Length))
 	}
 }
 

@@ -147,12 +147,12 @@ func TestIndexOsFile(t *testing.T) {
 	f := TempFile(t)
 	defer ClearTempFile(f, t)
 	index := Index{Backend: f}
-	b := NewLinkBuffer()
+	b := AcquireIndexBuffer()
 	expected := Link{
 		ID:     0,
 		Offset: 1234,
 	}
-	if err := index.WriteBuff(expected, b); err != nil {
+	if err := index.WriteBuff(expected, b.B); err != nil {
 		t.Error(err)
 	}
 	l, err := index.ReadBuff(expected.ID, make([]byte, LinkStructureSize))
@@ -221,4 +221,32 @@ func TestIndex_WriteBuff_Error(t *testing.T) {
 	if bErr != expected {
 		t.Error(bErr, "!=", expected)
 	}
+}
+
+func TestIndex_NextID(t *testing.T) {
+	f := TempFile(t)
+	defer ClearTempFile(f, t)
+	index := Index{Backend: f}
+	for i := 0; i < 1000; i++ {
+		_, err := index.NextID()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkIndex_NextID(b *testing.B) {
+	f := TempFile(b)
+	defer ClearTempFile(f, b)
+	index := Index{Backend: f}
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_, err := index.NextID()
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }

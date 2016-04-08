@@ -2,6 +2,8 @@ package storage
 
 import (
 	"encoding/binary"
+	"sync"
+	"sync/atomic"
 )
 
 // Link is index entry that links file id to offset, ID is key, Offset is value.
@@ -16,26 +18,57 @@ type Link struct {
 // LinkStructureSize is minimum buf length required in Link.{Read,Put} and is 128 bit or 16 byte.
 const LinkStructureSize = 8 * 2
 
-// NewLinkBuffer is shorthand for new []byte slice with length LinkStructureSize
-// that is safe to pass as buffer to all Link-related Read/Write methods.
-func NewLinkBuffer() []byte {
-	return make([]byte, LinkStructureSize)
-}
-
 // An IndexBackend describes a backend that is used for index store.
 type IndexBackend Backend
 
 // Index uses IndexBackend to store and retrieve Links
 type Index struct {
-	Backend IndexBackend
+	Backend     IndexBackend
+	LastID      int64
+	Capacity    int64
+	BackendLock sync.Mutex
+}
+
+const (
+	// indexMinFreeCapacity is minimum of (Index.Capacity - Index.LastID).
+	indexMinFreeCapacity = 10
+	// indexPreallocateRate is rate of capacity growth.
+	indexPreallocateRate = 2
+)
+
+// nearCapacity returns true if newID is close to index capacity.
+func (i *Index) nearCapacity(newID int64) bool {
+	return newID+ indexMinFreeCapacity > i.Capacity
+}
+
+// NextID claims new id from index, allocating more
+// space for index if needed and returns error if any.
+//
+// It is safe to call NextID concurrently, because it uses atomic operations
+// and preallocate method is guarded by mutex.
+//
+// Warning: not calling file sync.
+func (i *Index) NextID() (int64, error) {
+	newID := atomic.AddInt64(&i.LastID, 1)
+	if !i.nearCapacity(newID) {
+		return newID, nil
+	}
+	if err := i.Preallocate(newID * indexPreallocateRate); err != nil {
+		atomic.AddInt64(&i.LastID, -1)
+		return 0, err
+	}
+	return newID, nil
 }
 
 // Preallocate truncates changes the size of the index file so index
 // can fit provided count if links.
-func (i Index) Preallocate(count int) error {
-	if err := i.Backend.Truncate(int64(count * LinkStructureSize)); err != nil {
+func (i *Index) Preallocate(count int64) error {
+	i.BackendLock.Lock()
+	defer i.BackendLock.Unlock()
+	if err := i.Backend.Truncate(count * LinkStructureSize); err != nil {
 		return BackendError(err, AtIndex)
 	}
+	i.Capacity = count
 	return nil
 }
 

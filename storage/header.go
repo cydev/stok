@@ -5,7 +5,7 @@ import (
 )
 
 // Header represents a stored data, obtainable with ReadAt(data, Header.Offset+HeaderStructureSize),
-// where len(data) >= Size.
+// where len(data) >= Length.
 //
 // ReadAt(b, Header.Offset) with len(b) = HeaderStructureSize will read serialized info, and Header.Read(b)
 // will read it into structure fields.
@@ -17,14 +17,19 @@ import (
 //    |              of Header                  |
 //    |-- Header.Offset + HeaderStructureSize --| 16 // or Header.DataOffset()
 //    |                                         |
-//    |         Header.Size bytes               |
+//    |         Header.Length bytes             |
 //    |                                         |
-//    |-----------------------------------------| size + 16
+//    |-----------------------------------------| length + 16
 type Header struct {
 	ID        int64 // -> Link.ID
 	Offset    int64 // -> Link.Offset
-	Size      int   // len(data)
+	Length    int   // len(data)
 	Timestamp int64 // Time.Unix()
+}
+
+// Length64 returns int64 version of Length.
+func (h Header) Length64() int64 {
+	return int64(h.Length)
 }
 
 // Link returns link to Header via ID and Offset copy.
@@ -59,7 +64,7 @@ func (h *Header) Read(b []byte) int {
 	offset += read
 	var tSize int64
 	tSize, read = binary.Varint(b[offset:])
-	h.Size = int(tSize)
+	h.Length = int(tSize)
 	offset += read
 	h.Offset, read = binary.Varint(b[offset:])
 	offset += read
@@ -71,7 +76,7 @@ func (h *Header) Read(b []byte) int {
 func (h Header) Put(b []byte) int {
 	var offset int
 	offset += binary.PutVarint(b[offset:], h.ID)
-	offset += binary.PutVarint(b[offset:], int64(h.Size))
+	offset += binary.PutVarint(b[offset:], h.Length64())
 	offset += binary.PutVarint(b[offset:], h.Offset)
 	offset += binary.PutVarint(b[offset:], h.Timestamp)
 	return offset

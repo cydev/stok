@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+	"testing"
 )
 
 // IDEAWorkaround is workaround for go-lang-plugin-org/go-lang-idea-plugin#2439.
@@ -24,14 +25,9 @@ func IDEAWorkaround() {
 	}
 }
 
-// Fatalist is common interface for testing.T and testing.B.
-type Fatalist interface {
-	Fatal(args ...interface{})
-	Error(args ...interface{})
-}
 
 // TempFile returns temporary file and calls t.Fatal if error.
-func TempFile(t Fatalist) *os.File {
+func TempFile(t testing.TB) *os.File {
 	f, err := ioutil.TempFile("", "")
 	if err != nil {
 		t.Fatal("tempFile:", err)
@@ -41,7 +37,7 @@ func TempFile(t Fatalist) *os.File {
 
 // ClearTempFile closes and removes given file and calls t.Error
 // on Close error and t.Fatal on Remove error.
-func ClearTempFile(f *os.File, t Fatalist) {
+func ClearTempFile(f *os.File, t testing.TB) {
 	name := f.Name()
 	if err := f.Close(); err != nil {
 		t.Error(err)
@@ -119,3 +115,13 @@ func (m MemoryBackend) Sys() interface{} {
 func (m MemoryBackend) ModTime() time.Time {
 	return time.Time{}
 }
+
+// ZeroReaders implements Reader that returns length and nil error.
+type ZeroReader struct {}
+
+func (z ZeroReader) Read(b []byte) (int, error) {
+	return len(b), nil
+}
+
+// Zeroes is default ZeroReader
+var Zeroes = ZeroReader{}
