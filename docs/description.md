@@ -9,4 +9,5 @@ func main() {
   fmt.Println("Hello world")
 }
 ```
-Test *what*?
+
+Охуенно!
