@@ -8,20 +8,20 @@
 // files are reorganized in way that minimize space consumption.
 // Efficiency of vacuum fully depends on underlying algorithm and may vary.
 //
-// Files are stored in bulks, links in indexes. Bulk and index togather is Volume.
+// Files are stored in buckets, links in indexes. Bucket and index togather is Volume.
 package storage
 
 import "time"
 
-// Volume consists of Bulk and Index on it, and implements abstraction layer.
+// Volume consists of Bucket and Index on it, and implements abstraction layer.
 //
-// Bulk <-> Index
-// Bulk is list of files stored in backend with headers, supplied by Index, which links
+// Bucket <-> Index
+// Bucket is list of files stored in backend with headers, supplied by Index, which links
 // ID to Offset and makes possible O(1) read operations.
-// Index can be recovered from Bulk, because Bulk contains redundant information (Offset, ID).
+// Index can be recovered from Bucket, because Bucket contains redundant information (Offset, ID).
 type Volume struct {
-	Index Index
-	Bulk  Bulk
+	Index  Index
+	Bucket Bucket
 }
 
 // ReadCallback is called on successful read from Volume. Buffer is valid until return.
@@ -41,11 +41,11 @@ func (v Volume) ReadFile(id int64, f ReadCallback) error {
 	if l.ID != id {
 		return IDMismatchError(l.ID, id, AtIndex)
 	}
-	h, err := v.Bulk.ReadHeader(l, b.B)
+	h, err := v.Bucket.ReadHeader(l, b.B)
 	if err != nil {
 		return err
 	}
-	if err := v.Bulk.ReadData(h, b); err != nil {
+	if err := v.Bucket.ReadData(h, b); err != nil {
 		return err
 	}
 	return f(h, b.B)
@@ -64,5 +64,5 @@ func (v Volume) WriteFile(l Link, b []byte) (Header, error) {
 	if err := v.Index.WriteBuff(l, buf.B); err != nil {
 		return h, err
 	}
-	return h, v.Bulk.Write(h, b)
+	return h, v.Bucket.Write(h, b)
 }

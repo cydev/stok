@@ -6,44 +6,44 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/cydev/stok/stokutils"
 	log "github.com/Sirupsen/logrus"
+	. "github.com/cydev/stok/stokutils"
 )
 
-func TestBulk_Allocate(t *testing.T) {
+func TestBucket_Allocate(t *testing.T) {
 	backend := TempFile(t)
 	defer ClearTempFile(backend, t)
-	bulk := Bulk{Backend: backend}
+	bucket := Bucket{Backend: backend}
 
 	for i := int64(1); i < 10; i++ {
-		off, err := bulk.Allocate(128+i)
+		off, err := bucket.Allocate(128 + i)
 		if err != nil {
 			t.Error(err)
 		}
 		log.WithFields(log.Fields{
 			"offset": off,
-			"end": 128 + i + off,
-			"cap": bulk.Capacity,
+			"end":    128 + i + off,
+			"cap":    bucket.Capacity,
 		}).Info("allocated")
 	}
 
 }
 
-func TestBulk_Read(t *testing.T) {
-	testBulkRead(t, []byte("Data data data data data!"))
+func TestBucket_Read(t *testing.T) {
+	testBucketRead(t, []byte("Data data data data data!"))
 }
 
-func TestBulk_Read2xPoolBufferSize(t *testing.T) {
+func TestBucket_Read2xPoolBufferSize(t *testing.T) {
 	d := []byte("Data data data data data!")
 	buf := make([]byte, defaultByteBufferSize*2)
 	copy(buf, d)
-	testBulkRead(t, buf)
+	testBucketRead(t, buf)
 }
 
-func testBulkRead(t *testing.T, data []byte) {
+func testBucketRead(t *testing.T, data []byte) {
 	backend := TempFile(t)
 	defer ClearTempFile(backend, t)
-	bulk := Bulk{Backend: backend}
+	bucket := Bucket{Backend: backend}
 	h := Header{
 		Length:    len(data),
 		Offset:    0,
@@ -66,16 +66,16 @@ func testBulkRead(t *testing.T, data []byte) {
 		Offset: 0,
 	}
 	hBuf := make([]byte, 0, h.Length)
-	hRead, err := bulk.ReadHeader(l, hBuf)
+	hRead, err := bucket.ReadHeader(l, hBuf)
 	if err != nil {
-		t.Error("bulk.ReadInfo", err)
+		t.Error("bucket.ReadInfo", err)
 	}
-	bulkBuf := AcquireByteBuffer()
-	defer ReleaseByteBuffer(bulkBuf)
-	if err := bulk.ReadData(hRead, bulkBuf); err != nil {
-		t.Error("bulk.Read", err)
+	bucketBuf := AcquireByteBuffer()
+	defer ReleaseByteBuffer(bucketBuf)
+	if err := bucket.ReadData(hRead, bucketBuf); err != nil {
+		t.Error("bucket.Read", err)
 	}
-	hBuf = bulkBuf.B
+	hBuf = bucketBuf.B
 	if hRead != h {
 		t.Errorf("%v != %v", hRead, h)
 	}
@@ -88,34 +88,34 @@ func testBulkRead(t *testing.T, data []byte) {
 	}
 }
 
-func testBulkWrite(t *testing.T, data []byte) {
+func testBucketWrite(t *testing.T, data []byte) {
 	backend := TempFile(t)
 	defer ClearTempFile(backend, t)
-	bulk := Bulk{Backend: backend}
+	bucket := Bucket{Backend: backend}
 	h := Header{
 		Length:    len(data),
 		Offset:    0,
 		Timestamp: time.Now().Unix(),
 		ID:        0,
 	}
-	if err := bulk.Write(h, data); err != nil {
-		t.Fatal("bulk.Read", err)
+	if err := bucket.Write(h, data); err != nil {
+		t.Fatal("bucket.Read", err)
 	}
 	l := Link{
 		ID:     h.ID,
 		Offset: 0,
 	}
 	hBuf := make([]byte, 0, h.Length)
-	hRead, err := bulk.ReadHeader(l, hBuf)
+	hRead, err := bucket.ReadHeader(l, hBuf)
 	if err != nil {
-		t.Error("bulk.ReadInfo", err)
+		t.Error("bucket.ReadInfo", err)
 	}
-	bulkBuf := AcquireByteBuffer()
-	defer ReleaseByteBuffer(bulkBuf)
-	if err := bulk.ReadData(hRead, bulkBuf); err != nil {
-		t.Error("bulk.Read", err)
+	bucketBuf := AcquireByteBuffer()
+	defer ReleaseByteBuffer(bucketBuf)
+	if err := bucket.ReadData(hRead, bucketBuf); err != nil {
+		t.Error("bucket.Read", err)
 	}
-	hBuf = bulkBuf.B
+	hBuf = bucketBuf.B
 	if hRead != h {
 		t.Errorf("%v != %v", hRead, h)
 	}
@@ -128,15 +128,15 @@ func testBulkWrite(t *testing.T, data []byte) {
 	}
 }
 
-func TestBulk_Write1b(t *testing.T) {
-	testBulkWrite(t, []byte("s"))
+func TestBucket_Write1b(t *testing.T) {
+	testBucketWrite(t, []byte("s"))
 }
 
-func TestBulk_Write(t *testing.T) {
-	testBulkWrite(t, []byte(("Data data data data data!")))
+func TestBucket_Write(t *testing.T) {
+	testBucketWrite(t, []byte(("Data data data data data!")))
 }
 
-func BenchmarkBulk_Read(b *testing.B) {
+func BenchmarkBucket_Read(b *testing.B) {
 	var backend MemoryBackend
 	buf := make([]byte, LinkStructureSize)
 	var id int64
@@ -162,25 +162,25 @@ func BenchmarkBulk_Read(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
-	bulk := Bulk{Backend: &backend}
+	bucket := Bucket{Backend: &backend}
 	l := Link{
 		ID:     3,
 		Offset: (int64(tmpHeader.Length) + LinkStructureSize) * 3,
 	}
-	bulkBuf := AcquireByteBuffer()
-	defer ReleaseByteBuffer(bulkBuf)
+	bucketBuf := AcquireByteBuffer()
+	defer ReleaseByteBuffer(bucketBuf)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		fRead, err := bulk.ReadHeader(l, bulkBuf.B)
+		fRead, err := bucket.ReadHeader(l, bucketBuf.B)
 		if err != nil {
-			b.Error("bulk.ReadInfo", err)
+			b.Error("bucket.ReadInfo", err)
 		}
-		if err = bulk.ReadData(fRead, bulkBuf); err != nil {
-			b.Error("bulk.Read", err)
+		if err = bucket.ReadData(fRead, bucketBuf); err != nil {
+			b.Error("bucket.Read", err)
 		}
 		if err != nil {
 			b.Error(err)
 		}
-		bulkBuf.Reset()
+		bucketBuf.Reset()
 	}
 }

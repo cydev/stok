@@ -23,7 +23,7 @@ func TestVolume_WriteFile(t *testing.T) {
 		Index: Index{
 			Backend: iB,
 		},
-		Bulk: Bulk{
+		Bucket: Bucket{
 			Backend: bB,
 		},
 	}
@@ -58,7 +58,7 @@ func TestVolume_ReadFile(t *testing.T) {
 		Index: Index{
 			Backend: iB,
 		},
-		Bulk: Bulk{
+		Bucket: Bucket{
 			Backend: bB,
 		},
 	}
@@ -77,7 +77,7 @@ func TestVolume_ReadFile(t *testing.T) {
 	if err := v.Index.WriteBuff(l, buff.B[:LinkStructureSize]); err != nil {
 		t.Error(err)
 	}
-	if err := v.Bulk.Write(h, d); err != nil {
+	if err := v.Bucket.Write(h, d); err != nil {
 		t.Error(err)
 	}
 
@@ -105,7 +105,7 @@ func TestVolume_ReadFile_CatchAtIndex(t *testing.T) {
 		Index: Index{
 			Backend: iB,
 		},
-		Bulk: Bulk{
+		Bucket: Bucket{
 			Backend: bB,
 		},
 	}
@@ -124,7 +124,7 @@ func TestVolume_ReadFile_CatchAtIndex(t *testing.T) {
 	if err := v.Index.WriteBuff(l, buff.B[:LinkStructureSize]); err != nil {
 		t.Error(err)
 	}
-	if err := v.Bulk.Write(h, d); err != nil {
+	if err := v.Bucket.Write(h, d); err != nil {
 		t.Error(err)
 	}
 
@@ -142,7 +142,7 @@ func TestVolume_ReadFile_CatchAtIndex(t *testing.T) {
 	}
 }
 
-func TestVolume_ReadFile_CatchAtBulk(t *testing.T) {
+func TestVolume_ReadFile_CatchAtBucket(t *testing.T) {
 	iB := TempFile(t)
 	defer ClearTempFile(iB, t)
 	bB := TempFile(t)
@@ -152,7 +152,7 @@ func TestVolume_ReadFile_CatchAtBulk(t *testing.T) {
 		Index: Index{
 			Backend: iB,
 		},
-		Bulk: Bulk{
+		Bucket: Bucket{
 			Backend: bB,
 		},
 	}
@@ -172,7 +172,7 @@ func TestVolume_ReadFile_CatchAtBulk(t *testing.T) {
 	if err := v.Index.WriteBuff(l, buff.B[:LinkStructureSize]); err != nil {
 		t.Error(err)
 	}
-	if err := v.Bulk.Write(h, d); err != nil {
+	if err := v.Bucket.Write(h, d); err != nil {
 		t.Error(err)
 	}
 
@@ -180,7 +180,7 @@ func TestVolume_ReadFile_CatchAtBulk(t *testing.T) {
 		t.Fatal("callback should not be called")
 		return nil
 	}
-	expectedError := IDMismatchError(2, 0, AtBulk)
+	expectedError := IDMismatchError(2, 0, AtBucket)
 	if err, ok := v.ReadFile(l.ID, callback).(ErrIDMismatch); !ok {
 		t.Error("Error not catched")
 	} else {
@@ -202,7 +202,7 @@ func benchmarkVolumeReadFile(b *testing.B, d []byte) {
 		Index: Index{
 			Backend: iB,
 		},
-		Bulk: Bulk{
+		Bucket: Bucket{
 			Backend: bB,
 		},
 	}
@@ -220,7 +220,7 @@ func benchmarkVolumeReadFile(b *testing.B, d []byte) {
 	if err := v.Index.WriteBuff(l, buff.B[:LinkStructureSize]); err != nil {
 		b.Error(err)
 	}
-	if err := v.Bulk.Write(h, d); err != nil {
+	if err := v.Bucket.Write(h, d); err != nil {
 		b.Error(err)
 	}
 

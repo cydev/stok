@@ -10,7 +10,7 @@ import (
 // ReadAt(b, Header.Offset) with len(b) = HeaderStructureSize will read serialized info, and Header.Read(b)
 // will read it into structure fields.
 //
-// Bulk element structure:
+// Bucket element structure:
 //    |-----------------------------------------| -1
 //    |------------ Header.Offset --------------| 0
 //    |       HeaderStructureSize bytes         |

@@ -38,7 +38,7 @@ const (
 
 // nearCapacity returns true if newID is close to index capacity.
 func (i *Index) nearCapacity(newID int64) bool {
-	return newID+ indexMinFreeCapacity > i.Capacity
+	return newID+indexMinFreeCapacity > i.Capacity
 }
 
 // NextID claims new id from index, allocating more

@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-// Backend for IO operations used in Index and Bulk.
+// Backend for IO operations used in Index and Bucket.
 type Backend interface {
 	ReadAt(b []byte, off int64) (int, error)
 	WriteAt(b []byte, off int64) (int, error)

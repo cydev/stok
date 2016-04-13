@@ -10,11 +10,11 @@ type VolumeError interface {
 // ErrorKind indicates the place where error occurred.
 type ErrorKind int
 
-// Error may occur at Index, Bulk level, or on higher Volume level.
+// Error may occur at Index, Bucket level, or on higher Volume level.
 const (
 	AtVolume ErrorKind = iota
 	AtIndex
-	AtBulk
+	AtBucket
 )
 
 func (e ErrorKind) String() string {
@@ -23,17 +23,17 @@ func (e ErrorKind) String() string {
 		return "Volume"
 	case AtIndex:
 		return "Index"
-	case AtBulk:
-		return "Bulk"
+	case AtBucket:
+		return "Bucket"
 	default:
 		panic(fmt.Sprint("Unknown error kind:", int(e)))
 	}
 }
 
 // ErrIDMismatch means that Header.ID is not equal to provided Link.ID and
-// is returned by Bulk.ReadHeader.
+// is returned by Bucket.ReadHeader.
 //
-// Possible reasons are data corruption or usage of wrong index for bulk.
+// Possible reasons are data corruption or usage of wrong index for bucket.
 type ErrIDMismatch struct {
 	Got      int64
 	Expected int64
