@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"encoding/hex"
 )
+
 func main() {
 	f, err := os.Open("hashes.txt")
 	if err != nil {
