@@ -10,21 +10,6 @@ import (
 	"testing"
 )
 
-// IDEAWorkaround is workaround for go-lang-plugin-org/go-lang-idea-plugin#2439.
-//
-// Usage:
-//     func TestMain(m *testing.M) {
-//         code := m.Run()
-//         IDEAWorkaround()
-//         os.Exit(code)
-//     }
-func IDEAWorkaround() {
-	// workaround for go-lang-plugin-org/go-lang-idea-plugin#2439
-	if len(os.Getenv("IDEAWAIT")) > 0 {
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
 
 // TempFile returns temporary file and calls t.Fatal if error.
 func TempFile(t testing.TB) *os.File {

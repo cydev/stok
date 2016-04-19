@@ -3,6 +3,7 @@ package storage
 import (
 	"sync"
 	"sync/atomic"
+	"io"
 )
 
 // An BucketBackend describes a backend that is used for file store.
@@ -79,6 +80,22 @@ func (b Bucket) ReadData(h Header, buf *ByteBuffer) error {
 	_, err := b.Backend.ReadAt(buf.B, h.DataOffset())
 	if err != nil {
 		return BackendError(err, AtBucket)
+	}
+	return nil
+}
+
+func (b *Bucket) Writer(size int64, callback func(io.Writer) error) error {
+	offset, err := b.Allocate(size)
+	if err != nil {
+		return err
+	}
+	buff := AcquireByteBuffer()
+	defer ReleaseByteBuffer(buff)
+	if err := callback(buff); err != nil {
+		return err
+	}
+	if _, err := b.Backend.WriteAt(buff[:size], offset); err != nil {
+		return err
 	}
 	return nil
 }
