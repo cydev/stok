@@ -1,9 +1,9 @@
 package storage
 
 import (
+	"io"
 	"sync"
 	"sync/atomic"
-	"io"
 )
 
 // An BucketBackend describes a backend that is used for file store.
@@ -94,7 +94,7 @@ func (b *Bucket) Writer(size int64, callback func(io.Writer) error) error {
 	if err := callback(buff); err != nil {
 		return err
 	}
-	if _, err := b.Backend.WriteAt(buff[:size], offset); err != nil {
+	if _, err := b.Backend.WriteAt(buff.B[:size], offset); err != nil {
 		return err
 	}
 	return nil

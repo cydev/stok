@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 	"testing"
+	"io"
 )
 
 
@@ -18,6 +19,26 @@ func TempFile(t testing.TB) *os.File {
 		t.Fatal("tempFile:", err)
 	}
 	return f
+}
+
+func MustClose(t testing.TB, c io.Closer) {
+	if err := c.Close(); err != nil {
+		t.Error(err)
+	}
+}
+
+// TempFile returns temporary file and calls t.Fatal if error.
+func TempFileClose(t testing.TB) (*os.File, func()) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal("tempFile:", err)
+	}
+	callback := func() {
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return f, callback
 }
 
 // ClearTempFile closes and removes given file and calls t.Error

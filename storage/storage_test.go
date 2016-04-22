@@ -8,11 +8,6 @@ import (
 	. "github.com/cydev/stok/stokutils"
 )
 
-func TestMain(m *testing.M) {
-	m.Run()
-	IDEAWorkaround()
-}
-
 func TestVolume_WriteFile(t *testing.T) {
 	iB := TempFile(t)
 	defer ClearTempFile(iB, t)
