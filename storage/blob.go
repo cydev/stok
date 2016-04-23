@@ -192,6 +192,7 @@ type BlobHeader struct {
 // blobHeaderSize = magic + size + capacity + crc
 const blobHeaderSize = 8 + 8 + 8 + 8
 
+// blobHeaderMagic are magic bytes at start of blob header.
 var blobHeaderMagic = [...]byte{
 	0xbb,
 	0xba,
