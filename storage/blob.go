@@ -14,7 +14,7 @@ import (
 var (
 	// ErrIsDirectory means that directory is found where file assumed.
 	ErrIsDirectory = errors.New("Got directory, need file")
-	// ErrBadHeaderMagic means that blob is unable to initialize due header corruption or wrong file format.
+	// ErrBadHeader means that blob is unable to initialize due header corruption or wrong file format.
 	ErrBadHeader = errors.New("Bad header magic bytes, file corrupted or in wrong format")
 	// ErrBadHeaderCapacity means that decoded capacity from header is less than actual file size.
 	ErrBadHeaderCapacity = errors.New("Capacity in header is less than actual file size, file can be corrupted")
@@ -102,7 +102,7 @@ func (b *Blob) writeHeader() error {
 	header.Put(b.headerBuff[:])
 	_, err := b.Backend.WriteAt(b.headerBuff[:], 0)
 	if b.Size == 0 {
-		b.Size = HeaderStructureSize
+		b.Size = blobHeaderSize
 	}
 	return err
 }
@@ -124,19 +124,6 @@ func (b *Blob) readHeader() error {
 	}
 	b.Size = h.Size
 	return nil
-}
-
-func NewFileBlob(backend BlobBackend) (*Blob, error) {
-	statBackend := backend.(StatBackend)
-	info, err := statBackend.Stat()
-	if err != nil {
-		return nil, err
-	}
-	return &Blob{
-		Size:     0,
-		Capacity: info.Size(),
-		Backend:  backend,
-	}, nil
 }
 
 const (
@@ -189,7 +176,7 @@ func OpenBlob(path string, cfg *BlobConfig) (*Blob, error) {
 
 // Close closes the Blob, rendering it unusable for changes.
 // It returns an error, if any.
-func (b Blob) Close() error {
+func (b *Blob) Close() error {
 	if err := b.Sync(); err != nil {
 		return err
 	}
@@ -252,5 +239,3 @@ func (h *BlobHeader) Read(buf []byte) error {
 	}
 	return nil
 }
-
-

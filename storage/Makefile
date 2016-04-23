@@ -1,6 +1,7 @@
 all: format check test
 check:
-	gometalinter --enable lll --enable goimports --enable "gofmt -s"
+	gometalinter --enable lll --enable goimports --enable "gofmt -s" \
+		-e "\w.+_test.go:.*\(gocyclo\)"
 format:
 	goimports -w .
 test:

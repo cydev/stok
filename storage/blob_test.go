@@ -8,17 +8,30 @@ import (
 	. "github.com/cydev/stok/stokutils"
 )
 
+func newFileBlob(backend BlobBackend) (*Blob, error) {
+	statBackend := backend.(StatBackend)
+	info, err := statBackend.Stat()
+	if err != nil {
+		return nil, err
+	}
+	return &Blob{
+		Size:     0,
+		Capacity: info.Size(),
+		Backend:  backend,
+	}, nil
+}
+
 func TestNewFileBlob(t *testing.T) {
 	f, fClose := TempFileClose(t)
 	defer fClose()
-	b, err := NewFileBlob(f)
+	b, err := newFileBlob(f)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
 	if err := b.Truncate(1024); err != nil {
 		t.Error(err)
 	}
-	if b.Size != HeaderStructureSize {
+	if b.Size != blobHeaderSize {
 		t.Error("size not header")
 	}
 	if b.Capacity != 1024 {
@@ -31,9 +44,9 @@ func TestNewFileBlob(t *testing.T) {
 
 func TestNewFileBlobTruncateError(t *testing.T) {
 	f, fClose := TempFileClose(t)
-	b, err := NewFileBlob(f)
+	b, err := newFileBlob(f)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
 	fClose()
 	if err := b.Truncate(1024); err == nil {
@@ -44,7 +57,7 @@ func TestNewFileBlobTruncateError(t *testing.T) {
 func TestNewFileBlobStatError(t *testing.T) {
 	f, fClose := TempFileClose(t)
 	fClose()
-	if _, err := NewFileBlob(f); err == nil {
+	if _, err := newFileBlob(f); err == nil {
 		t.Error("NewFileBlob should error")
 	}
 }
@@ -62,7 +75,7 @@ func TestOpenBlob(t *testing.T) {
 	if b.Capacity != DefaultBlobSize {
 		t.Error("wrong capacity")
 	}
-	if b.Size != HeaderStructureSize {
+	if b.Size != blobHeaderSize {
 		t.Error("wrong size")
 	}
 	data := []byte("data is good")
@@ -71,7 +84,7 @@ func TestOpenBlob(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if offset != HeaderStructureSize {
+	if offset != blobHeaderSize {
 		t.Error("wrong offset")
 	}
 	n, err := b.Backend.WriteAt(data, offset)
@@ -84,23 +97,23 @@ func TestOpenBlob(t *testing.T) {
 	if b.Size != offset+int64(len(data)) {
 		t.Error("wrong size")
 	}
-	if err := b.Sync(); err != nil {
+	if err = b.Sync(); err != nil {
 		t.Error(err)
 	}
 	buff := make([]byte, len(data))
-	if _, err := b.Backend.ReadAt(buff, offset); err != nil {
+	if _, err = b.Backend.ReadAt(buff, offset); err != nil {
 		t.Error(err)
 	}
 	if string(buff) != string(data) {
 		t.Error("data corrupted!")
 	}
-	if err := b.Close(); err != nil {
+	if err = b.Close(); err != nil {
 		t.Error(err)
 	}
 	if b, err = OpenBlob(name, nil); err != nil {
 		t.Error(err)
 	}
-	defer b.Close()
+	defer MustClose(t, b)
 	if b.Capacity != DefaultBlobSize {
 		t.Error("wrong capacity")
 	}
@@ -114,9 +127,11 @@ func TestOpenBlobBad(t *testing.T) {
 	name := f.Name()
 	buf := make([]byte, blobHeaderSize)
 	rand.Seed(666)
-	rand.Read(buf)
+	if _, err := rand.Read(buf); err != nil {
+		t.Error(err)
+	}
 	if _, err := f.Write(buf); err != nil {
-		t.Error()
+		t.Error(err)
 	}
 	if err := f.Close(); err != nil {
 		t.Error(err)
@@ -174,9 +189,9 @@ func TestBlob_Allocate(t *testing.T) {
 	close(sizesChan)
 	wg.Wait()
 	if err := b.Sync(); err != nil {
-		t.Error()
+		t.Error(err)
 	}
-	mustSize := sum + HeaderStructureSize
+	mustSize := sum + blobHeaderSize
 	if mustSize != b.Size {
 		t.Error("expected size", mustSize, "got", b.Size)
 	}
@@ -241,7 +256,7 @@ func TestBlobConfig(t *testing.T) {
 	}
 	conf = new(BlobConfig)
 	conf.InitialSize = DefaultBlobSize * 2
-	if conf.GetInitialSize() != DefaultBlobSize * 2 {
+	if conf.GetInitialSize() != DefaultBlobSize*2 {
 		t.Error("incorrect configured initial size")
 	}
 }

@@ -74,7 +74,7 @@ func AcquireIndexBuffer() *ByteBuffer {
 	v := indexBufferPool.Get()
 	if v == nil {
 		return &ByteBuffer{
-			B: make([]byte, 0, LinkStructureSize),
+			B: make([]byte, 0, 128),
 		}
 	}
 	return v.(*ByteBuffer)
