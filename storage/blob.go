@@ -233,23 +233,21 @@ func (h BlobHeader) Put(buf []byte) int {
 
 // Read decodes BlobHeader from buf and returns ErrBadHeader if it fails.
 func (h *BlobHeader) Read(buf []byte) error {
-	var (
-		offset = 8
-		crc    uint64
-	)
 	// checking header magic
 	for i, v := range blobHeaderMagic {
 		if v != buf[i] {
 			return ErrBadHeader
 		}
 	}
+	offset := 8
 	h.Size, _ = binary.Varint(buf[offset:])
 	offset += 8
 	h.Capacity, _ = binary.Varint(buf[offset:])
 	offset += 8
+	// calculating crc
 	expectedCRC := crc32.ChecksumIEEE(buf[:offset])
-	crc, _ = binary.Uvarint(buf[offset:])
-	if crc != uint64(expectedCRC) {
+	// checking crc
+	if crc, _ := binary.Uvarint(buf[offset:]); crc != uint64(expectedCRC) {
 		return ErrBadHeaderCRC
 	}
 	return nil
