@@ -11,7 +11,6 @@ import (
 	"io"
 )
 
-
 // TempFile returns temporary file and calls t.Fatal if error.
 func TempFile(t testing.TB) *os.File {
 	f, err := ioutil.TempFile("", "")
