@@ -133,7 +133,7 @@ func TestOpenBlobBad(t *testing.T) {
 	if _, err := f.Write(buf); err != nil {
 		t.Error(err)
 	}
-	if err := f.Close(); err != nil {s
+	if err := f.Close(); err != nil {
 		t.Error(err)
 	}
 	_, err := OpenBlob(name, nil)
