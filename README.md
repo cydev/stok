@@ -1,3 +1,6 @@
+[![forthebadge](http://forthebadge.com/images/badges/built-by-hipsters.svg)](http://forthebadge.com)
+[![forthebadge](http://forthebadge.com/images/badges/uses-git.svg)](http://forthebadge.com)
+[![forthebadge](http://forthebadge.com/images/badges/no-ragrets.svg)](http://forthebadge.com)
 <p align="center">
 <a href="https://travis-ci.org/cydev/stok"><img src="https://travis-ci.org/cydev/stok.svg"></img></a>
 <a href="http://godoc.org/github.com/cydev/stok"><img src="https://godoc.org/github.com/cydev/stok?status.svg"></img></a>
