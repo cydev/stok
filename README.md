@@ -1,7 +1,7 @@
 <p align="center">
 <a href="https://travis-ci.org/cydev/stok"><img src="https://travis-ci.org/cydev/stok.svg"></img></a>
 <a href="http://godoc.org/github.com/cydev/stok"><img src="https://godoc.org/github.com/cydev/stok?status.svg"></img></a>
-<a href="http://goreportcard.com/report/cydev/stok"><img src="http://goreportcard.com/badge/cydev/stok"></img></a>
+<a href="http://goreportcard.com/report/github.com/cydev/stok"><img src="http://goreportcard.com/badge/github.com/cydev/stok"></img></a>
 </p>
 # stok
 
