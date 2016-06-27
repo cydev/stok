@@ -2,24 +2,12 @@ package storage
 
 import (
 	"encoding/binary"
-	"errors"
 	"hash/crc32"
 	"io"
 	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
-)
-
-var (
-	// ErrIsDirectory means that directory is found where file assumed.
-	ErrIsDirectory = errors.New("Got directory, need file")
-	// ErrBadHeader means that blob is unable to initialize due header corruption or wrong file format.
-	ErrBadHeader = errors.New("Bad header magic bytes, file corrupted or in wrong format")
-	// ErrBadHeaderCapacity means that decoded capacity from header is less than actual file size.
-	ErrBadHeaderCapacity = errors.New("Capacity in header is less than actual file size, file can be corrupted")
-	// ErrBadHeaderCRC means that header crc check failed.
-	ErrBadHeaderCRC = errors.New("Header CRC missmatch")
 )
 
 // Allocator wraps Allocate method for allocating slices. Should be goroutine-safe.
@@ -189,8 +177,11 @@ type BlobHeader struct {
 	Capacity int64
 }
 
-// blobHeaderSize = magic + size + capacity + crc
-const blobHeaderSize = 8 + 8 + 8 + 8
+// s64 is size of int64 in bytes.
+const s64 = 8
+
+// blobHeaderSize = magic + size + capacity + crc.
+const blobHeaderSize = s64 + s64 + s64 + s64
 
 // blobHeaderMagic are magic bytes at start of blob header.
 var blobHeaderMagic = [...]byte{
@@ -207,15 +198,15 @@ var blobHeaderMagic = [...]byte{
 // Put encodes BlobHeader into buf and returns the number of bytes written.
 // If the buffer is too small, Put will panic.
 func (h BlobHeader) Put(buf []byte) int {
-	var offset = 8
+	var offset = s64
 	copy(buf[:offset], blobHeaderMagic[:])
 	binary.PutVarint(buf[offset:], h.Size)
-	offset += 8
-	binary.PutVarint(buf[offset:offset+8], h.Capacity)
-	offset += 8
+	offset += s64
+	binary.PutVarint(buf[offset:offset+s64], h.Capacity)
+	offset += s64
 	crc := crc32.ChecksumIEEE(buf[:offset])
-	binary.PutUvarint(buf[offset:offset+8], uint64(crc))
-	offset += 8
+	binary.PutUvarint(buf[offset:offset+s64], uint64(crc))
+	offset += s64
 	return offset
 }
 
@@ -227,11 +218,11 @@ func (h *BlobHeader) Read(buf []byte) error {
 			return ErrBadHeader
 		}
 	}
-	offset := 8
+	offset := s64
 	h.Size, _ = binary.Varint(buf[offset:])
-	offset += 8
+	offset += s64
 	h.Capacity, _ = binary.Varint(buf[offset:])
-	offset += 8
+	offset += s64
 	// calculating crc
 	expectedCRC := crc32.ChecksumIEEE(buf[:offset])
 	// checking crc
@@ -239,4 +230,11 @@ func (h *BlobHeader) Read(buf []byte) error {
 		return ErrBadHeaderCRC
 	}
 	return nil
+}
+
+// Append encodes header to b and returns b.
+func (h *BlobHeader) Append(b []byte) []byte {
+	t := make([]byte, blobHeaderSize) // should not escape
+	h.Put(t)
+	return append(b, t...)
 }

@@ -121,11 +121,31 @@ func (m MemoryBackend) ModTime() time.Time {
 	return time.Time{}
 }
 
+func (m MemoryBackend) Close() error {
+	return nil
+}
+
 // ZeroReaders implements Reader that returns length and nil error.
 type ZeroReader struct {}
 
 func (z ZeroReader) Read(b []byte) (int, error) {
 	return len(b), nil
+}
+
+func (z ZeroReader) ReadAt(b []byte, off int64) (int, error) {
+	return z.Read(b)
+}
+
+func (z ZeroReader) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func (z ZeroReader) WriteAt(b []byte, off int64) (int, error) {
+	return z.Write(b)
+}
+
+func (z ZeroReader) Close() error {
+	return nil
 }
 
 // Zeroes is default ZeroReader

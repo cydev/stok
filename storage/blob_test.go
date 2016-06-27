@@ -260,3 +260,16 @@ func TestBlobConfig(t *testing.T) {
 		t.Error("incorrect configured initial size")
 	}
 }
+
+func BenchmarkBlobHeader_Append(b *testing.B) {
+	header := BlobHeader{
+		Size:     12344,
+		Capacity: 51448,
+	}
+	b.ReportAllocs()
+	var buf []byte
+	for i := 0; i < b.N; i++ {
+		buf = header.Append(buf)[:0]
+		buf = buf[:0]
+	}
+}

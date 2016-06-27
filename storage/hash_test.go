@@ -1,7 +1,8 @@
 package storage
 
 import (
-	"crypto"
+	"crypto/sha1"
+	"crypto/sha512"
 	"hash/crc32"
 	"io"
 	"testing"
@@ -24,11 +25,11 @@ func benchmarkHash(b *testing.B, size int, writer io.Writer) {
 }
 
 func BenchmarkSHA1_1KB(b *testing.B) {
-	benchmarkHash(b, 1024, crypto.SHA1.New())
+	benchmarkHash(b, 1024, sha1.New())
 }
 
 func BenchmarkSHA512_1KB(b *testing.B) {
-	benchmarkHash(b, 1024, crypto.SHA512.New())
+	benchmarkHash(b, 1024, sha512.New())
 }
 
 func BenchmarkCRC32_1KB(b *testing.B) {
