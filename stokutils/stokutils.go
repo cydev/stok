@@ -148,5 +148,9 @@ func (z ZeroReader) Close() error {
 	return nil
 }
 
+func (z ZeroReader) Truncate(int64) error {
+	return nil
+}
+
 // Zeroes is default ZeroReader
 var Zeroes = ZeroReader{}
