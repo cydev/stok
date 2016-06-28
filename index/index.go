@@ -1,8 +1,24 @@
+// Package index implements index operations.
+//
+// Index is linear list of pairs (k, v), where len(v) = const,
+// and ki = i, that defines Get and Set operations that has complexity
+// of O(1).
+//
+// Index is represented by:
+//
+//   N    - max(i)
+//   Vlen - len(v) = const
+//   Blob - {v0, v1, ..., vi, ... vN}
+//
+// Vi is ReadAt(buf[:Vlen], Vlen*i) on Blob.
 package index
 
-import "io"
-import "github.com/valyala/bytebufferpool"
-import "github.com/pkg/errors"
+import (
+	"io"
+
+	"github.com/pkg/errors"
+	"github.com/valyala/bytebufferpool"
+)
 
 const StartID int64 = 0
 
