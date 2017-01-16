@@ -2,7 +2,7 @@ package binary
 
 import (
 	"github.com/cydev/stok"
-	bb "github.com/valyala/bytebufferpool"
+	"github.com/ernado/buffer"
 
 	b "encoding/binary"
 )
@@ -15,7 +15,7 @@ type Decoder interface {
 	Decode(b []byte) ([]byte, error)
 }
 
-func ToBuffer(a Appender, buf *bb.ByteBuffer) {
+func ToBuffer(a Appender, buf *buffer.Buffer) {
 	buf.B = a.Append(buf.B)
 }
 
