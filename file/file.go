@@ -16,8 +16,8 @@ func New(f *os.File) (*File, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to stat")
 	}
-	cap := info.Size()
-	if cap < headerSize {
+	cap_ := info.Size()
+	if cap_ < headerSize {
 		return create(f)
 	}
 	ff := new(File)
@@ -29,7 +29,7 @@ func New(f *os.File) (*File, error) {
 		return nil, errors.Wrap(err, "failed to decode")
 	}
 	ff.f = f
-	ff.capacity = cap
+	ff.capacity = cap_
 	ff.size = ff.h.Size
 	return ff, nil
 }
@@ -96,6 +96,22 @@ type File struct {
 	buf      []byte // buffer for header write
 }
 
+type Options struct {
+	Backend  Backend
+	Capacity int64
+	Size     int64
+}
+
+func NewFile(o Options) *File {
+	f := &File{
+		capacity: o.Capacity,
+		f:        o.Backend,
+		size:     o.Size,
+	}
+	f.buf = f.h.Append(f.buf)
+	return f
+}
+
 // Close implements io.Closer.
 func (f *File) Close() error {
 	if f == nil {
@@ -120,6 +136,8 @@ const (
 	headerSize = 8 + 8 // len(magic) + int64
 )
 
+// off returns offset from start of underlying file
+// to data offset.
 func (f *File) off(off int64) int64 {
 	return headerSize + off
 }
@@ -173,20 +191,23 @@ func nearestCap(current, need int64) int64 {
 	return nearestCap(next, need)
 }
 
-func (f *File) alloc(need int64) error {
-	cap := atomic.LoadInt64(&f.capacity)
-	newCap := nearestCap(cap, need)
-	if newCap == cap {
+// alloc truncates file to nearest newCap
+func (f *File) alloc(size int64) error {
+	oldCap := atomic.LoadInt64(&f.capacity)
+	newCap := nearestCap(oldCap, size)
+	if newCap == oldCap {
 		return nil
 	}
-	if !atomic.CompareAndSwapInt64(&f.capacity, cap, newCap) {
-		return nil
+	if !atomic.CompareAndSwapInt64(&f.capacity, oldCap, newCap) {
+		return f.alloc(size)
 	}
 	return f.f.Truncate(newCap)
 }
 
 // Append writes b and returns it offset, implementing Appender.
 func (f *File) Append(b []byte) (int64, error) {
+	// [f.size ... f.size+len(b)]
+	// soft allocate of len(b) in the end of file
 	size := atomic.AddInt64(&f.size, int64(len(b)))
 	if err := f.alloc(size); err != nil {
 		return 0, err
